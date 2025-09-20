@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statisticsapi
+  namespace: lbsite-tst
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: statisticsapi
+  template:
+    metadata:
+      labels:
+        app: statisticsapi
+    spec:
+      containers:
+        - name: statisticsapi
+          image: ghcr.io/org/statisticsapi:latest # replace with real image
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "tst"

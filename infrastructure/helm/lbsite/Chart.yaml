@@ -1,0 +1,12 @@
+apiVersion: v2
+name: lbsite
+version: 0.1.0
+description: Umbrella chart for lbsite applications
+appVersion: "0.1.0"
+dependencies:
+  - name: statisticsapi
+    version: 0.1.0
+    repository: "file://../statisticsapi"
+  - name: deviceregapi
+    version: 0.1.0
+    repository: "file://../deviceregapi"

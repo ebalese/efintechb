@@ -1,0 +1,15 @@
+statisticsapi:
+  replicaCount: 3
+  image:
+    tag: stable
+  service:
+    port: 80
+    targetPort: 8080
+
+deviceregapi:
+  replicaCount: 3
+  image:
+    tag: stable
+  service:
+    port: 80
+    targetPort: 8080
