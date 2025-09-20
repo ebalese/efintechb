@@ -1,0 +1,10 @@
+com\efintechb\lbsite\statistics\service\StatisticsService.class
+com\efintechb\lbsite\statistics\controller\LogController.class
+com\efintechb\lbsite\statistics\StatisticsApiApplication.class
+com\efintechb\lbsite\statistics\dto\SimpleResponse.class
+com\efintechb\lbsite\statistics\model\DeviceType.class
+com\efintechb\lbsite\statistics\repository\DeviceRegistrationRepository.class
+com\efintechb\lbsite\statistics\dto\StatisticsResponse.class
+com\efintechb\lbsite\statistics\model\DeviceRegistration.class
+com\efintechb\lbsite\statistics\client\DeviceRegistrationClient.class
+com\efintechb\lbsite\statistics\dto\AuthLogRequest.class

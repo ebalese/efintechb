@@ -1,0 +1,8 @@
+com\efintechb\lbsite\deviceregistration\dto\RegisterRequest.class
+com\efintechb\lbsite\deviceregistration\dto\SimpleResponse.class
+com\efintechb\lbsite\deviceregistration\model\DeviceRegistration.class
+com\efintechb\lbsite\deviceregistration\controller\DeviceController.class
+com\efintechb\lbsite\deviceregistration\DeviceRegistrationApiApplication.class
+com\efintechb\lbsite\deviceregistration\service\DeviceRegistrationService.class
+com\efintechb\lbsite\deviceregistration\model\DeviceType.class
+com\efintechb\lbsite\deviceregistration\repository\DeviceRegistrationRepository.class

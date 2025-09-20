@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deviceregapi
+  namespace: lbsite-tst
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deviceregapi
+  template:
+    metadata:
+      labels:
+        app: deviceregapi
+    spec:
+      containers:
+        - name: deviceregapi
+          image: ghcr.io/org/deviceregapi:latest # replace with real image
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "tst"

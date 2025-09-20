@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statisticsapi
+  namespace: lbsite-prd
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: statisticsapi
+  template:
+    metadata:
+      labels:
+        app: statisticsapi
+    spec:
+      containers:
+        - name: statisticsapi
+          image: ghcr.io/org/statisticsapi:stable # replace with real image
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prd"

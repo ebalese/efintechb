@@ -1,0 +1,42 @@
+name: Compliance Framework
+
+on:
+  workflow_run:
+    workflows: ["DeviceRegistrationAPI CI", "StatisticsAPI CI"]
+    types: [completed]
+  push:
+    branches: ["main"]
+  pull_request:
+  schedule:
+    - cron: "0 0 * * 0"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  container-scan:
+    name: Container Vulnerability Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: device-registration-api
+            path: application/lbsite/DeviceRegistrationAPI
+          - name: statistics-api
+            path: application/lbsite/StatisticsAPI
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image (${{ matrix.service.name }})
+        run: docker build -t ${{ matrix.service.name }}:latest ${{ matrix.service.path }}
+      - name: Run Trivy scan (${{ matrix.service.name }})
+        uses: aquasecurity/trivy-action@0.13.1
+        with:
+          image-ref: ${{ matrix.service.name }}:latest
+          format: 'sarif'
+          output: trivy-results-${{ matrix.service.name }}.sarif
+          exit-code: '1'
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results-${{ matrix.service.name }}.sarif
