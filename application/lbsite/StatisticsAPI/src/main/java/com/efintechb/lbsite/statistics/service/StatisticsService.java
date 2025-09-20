@@ -34,6 +34,8 @@ public class StatisticsService {
         if (!DeviceType.isValid(deviceType)) {
             return -1;
         }
-        return repository.countByDeviceTypeIgnoreCase(deviceType);
+        // normalize to ensure consistent querying and align with tests
+        String normalized = deviceType.toUpperCase();
+        return repository.countByDeviceTypeIgnoreCase(normalized);
     }
 }
