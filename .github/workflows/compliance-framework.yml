@@ -27,23 +27,22 @@ jobs:
             path: application/lbsite/StatisticsAPI
     steps:
       - uses: actions/checkout@v4
-      - name: Build Docker image ("${{ matrix.service.name }}")
-        run: |
-          docker build -t ${{ matrix.service.name }}:latest ${{ matrix.service.path }}
-      - name: Run Trivy scan ("${{ matrix.service.name }}")
+      - name: Build Docker image (${{ matrix.service.name }})
+        run: docker build -t ${{ matrix.service.name }}:latest ${{ matrix.service.path }}
+      - name: Run Trivy scan (${{ matrix.service.name }})
         uses: aquasecurity/trivy-action@0.13.1
         with:
           image-ref: ${{ matrix.service.name }}:latest
           format: 'sarif'
-          output: 'trivy-results-${{ matrix.service.name }}.sarif'
+          output: trivy-results-${{ matrix.service.name }}.sarif
           exit-code: '1'
-      - name: Upload SARIF to GitHub Security ("${{ matrix.service.name }}")
+      - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results-${{ matrix.service.name }}.sarif
 
-  license-scan:
-    name: License Compliance
+  sca-scan:
+    name: Software Composition Analysis (Licenses + Dependencies)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,13 +50,7 @@ jobs:
         uses: pilosus/action-license-compliance@v1
         with:
           policy: "MIT,Apache-2.0,BSD-3-Clause"
-
-  dependency-scan:
-    name: Dependency Vulnerability Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run OSV Scanner (Maven manifests)
+      - name: Run OSV Scanner
         uses: google/osv-scanner-action@v1
         with:
           scan-args: >-
