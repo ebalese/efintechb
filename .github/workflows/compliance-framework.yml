@@ -1,0 +1,92 @@
+name: Compliance Framework
+
+on:
+  workflow_run:
+    workflows: ["DeviceRegistrationAPI CI", "StatisticsAPI CI"]
+    types: [completed]
+  push:
+    branches: ["main"]
+  pull_request:
+  schedule:
+    - cron: "0 0 * * 0"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  container-scan:
+    name: Container Vulnerability Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: device-registration-api
+            path: application/lbsite/DeviceRegistrationAPI
+          - name: statistics-api
+            path: application/lbsite/StatisticsAPI
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image ("${{ matrix.service.name }}")
+        run: |
+          docker build -t ${{ matrix.service.name }}:latest ${{ matrix.service.path }}
+      - name: Run Trivy scan ("${{ matrix.service.name }}")
+        uses: aquasecurity/trivy-action@0.13.1
+        with:
+          image-ref: ${{ matrix.service.name }}:latest
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.service.name }}.sarif'
+          exit-code: '1'
+      - name: Upload SARIF to GitHub Security ("${{ matrix.service.name }}")
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results-${{ matrix.service.name }}.sarif
+
+  license-scan:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run License Compliance
+        uses: pilosus/action-license-compliance@v1
+        with:
+          policy: "MIT,Apache-2.0,BSD-3-Clause"
+
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run OSV Scanner (Maven manifests)
+        uses: google/osv-scanner-action@v1
+        with:
+          scan-args: >-
+            --recursive
+            --path application/lbsite/DeviceRegistrationAPI/pom.xml
+            --path application/lbsite/StatisticsAPI/pom.xml
+
+  secrets-scan:
+    name: Secrets Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  codeql-scan:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: 'java'
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
