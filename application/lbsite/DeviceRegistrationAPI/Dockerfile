@@ -4,7 +4,7 @@ FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /workspace
 COPY pom.xml .
 COPY src ./src
-RUN mvn -q -DskipTests package
+RUN mvn -q -DskipTests package spring-boot:repackage
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
