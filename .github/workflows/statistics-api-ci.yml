@@ -93,22 +93,21 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_HUB_USERNAME }}/statistics-api
-          tags: |
-            type=raw,value=latest
-            type=sha
+      - name: Read app version from pom.xml
+        id: ver
+        working-directory: application/lbsite/StatisticsAPI
+        run: |
+          APP_VERSION=$(mvn -q -Dexec.skip -DskipTests -Dexpression=project.version -DforceStdout help:evaluate)
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: application/lbsite/StatisticsAPI
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/statistics-api:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/statistics-api:${{ steps.ver.outputs.app_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
