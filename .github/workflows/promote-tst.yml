@@ -1,12 +1,9 @@
 name: Promote to TST (Helm)
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'application/lbsite/**'
-      - '.github/workflows/**'
-      - 'infrastructure/helm/**'
+  workflow_run:
+    workflows: ["DeviceRegistrationAPI CI", "StatisticsAPI CI"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -15,29 +12,59 @@ permissions:
 jobs:
   update-values:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Read app versions from pom.xml
+        id: versions
+        shell: bash
+        run: |
+          STATS_POM=application/lbsite/StatisticsAPI/pom.xml
+          DEVREG_POM=application/lbsite/DeviceRegistrationAPI/pom.xml
+          STATS_VER=$(mvn -q -f "$STATS_POM" -Dexec.skip -DskipTests -Dexpression=project.version -DforceStdout help:evaluate)
+          DEVREG_VER=$(mvn -q -f "$DEVREG_POM" -Dexec.skip -DskipTests -Dexpression=project.version -DforceStdout help:evaluate)
+          # optionally normalize SNAPSHOTs for TST (keep as-is); if you want to strip: ${var%-SNAPSHOT}
+          echo "statistics_version=$STATS_VER" >> $GITHUB_OUTPUT
+          echo "devicereg_version=$DEVREG_VER" >> $GITHUB_OUTPUT
 
       - name: Set image repo and tag in Helm values (tst)
         uses: mikefarah/yq@v4.43.1
         with:
           cmd: |
             yq -i '.statisticsapi.image.repository = "${{ secrets.DOCKER_HUB_USERNAME }}/statistics-api"' infrastructure/helm/lbsite/values/tst.yaml
-            yq -i '.statisticsapi.image.tag = "${{ github.sha }}"' infrastructure/helm/lbsite/values/tst.yaml
+            yq -i '.statisticsapi.image.tag = "${{ steps.versions.outputs.statistics_version }}"' infrastructure/helm/lbsite/values/tst.yaml
             yq -i '.deviceregapi.image.repository = "${{ secrets.DOCKER_HUB_USERNAME }}/device-registration-api"' infrastructure/helm/lbsite/values/tst.yaml
-            yq -i '.deviceregapi.image.tag = "${{ github.sha }}"' infrastructure/helm/lbsite/values/tst.yaml
+            yq -i '.deviceregapi.image.tag = "${{ steps.versions.outputs.devicereg_version }}"' infrastructure/helm/lbsite/values/tst.yaml
+
+      - name: Detect changes
+        id: diff
+        run: |
+          git add infrastructure/helm/lbsite/values/tst.yaml
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Pull Request for TST values update
         uses: peter-evans/create-pull-request@v6
+        if: steps.diff.outputs.changed == 'true'
         with:
-          commit-message: "ci(helm): promote TST values to ${GITHUB_SHA}"
-          title: "Promote TST to ${GITHUB_SHA}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "ci(helm): promote TST values to stats:${{ steps.versions.outputs.statistics_version }}, devreg:${{ steps.versions.outputs.devicereg_version }}"
+          title: "Promote TST to stats:${{ steps.versions.outputs.statistics_version }}, devreg:${{ steps.versions.outputs.devicereg_version }}"
           body: |
-            This PR updates TST Helm values to deploy images built from commit `${{ github.sha }}`.
-            - statisticsapi: `${{ secrets.DOCKER_HUB_USERNAME }}/statistics-api:${{ github.sha }}`
-            - deviceregapi: `${{ secrets.DOCKER_HUB_USERNAME }}/device-registration-api:${{ github.sha }}`
-          branch: ci/promote-tst-${{ github.sha }}
+            This PR updates TST Helm values to deploy images built from the application versions.
+            - statisticsapi: `${{ secrets.DOCKER_HUB_USERNAME }}/statistics-api:${{ steps.versions.outputs.statistics_version }}`
+            - deviceregapi: `${{ secrets.DOCKER_HUB_USERNAME }}/device-registration-api:${{ steps.versions.outputs.devicereg_version }}`
+          branch: ci/promote-tst-${{ steps.versions.outputs.statistics_version }}-${{ steps.versions.outputs.devicereg_version }}
           base: main
           add-paths: |
             infrastructure/helm/lbsite/values/tst.yaml
+          labels: |
+            ci
+            promote-tst
