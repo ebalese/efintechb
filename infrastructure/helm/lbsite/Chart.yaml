@@ -6,7 +6,7 @@ appVersion: "0.1.0"
 dependencies:
   - name: statisticsapi
     version: ">=0.1.0"
-    repository: "oci://registry-1.docker.io/balese/statisticsapi"
+    repository: "oci://registry-1.docker.io/balese"
   - name: deviceregapi
     version: ">=0.1.0"
-    repository: "oci://registry-1.docker.io/balese/deviceregapi"
+    repository: "oci://registry-1.docker.io/balese"
