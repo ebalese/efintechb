@@ -15,9 +15,25 @@ spec:
     spec:
       containers:
         - name: statisticsapi
-          image: ghcr.io/org/statisticsapi:latest # replace with real image
+          image: DOCKER_HUB_USERNAME/statistics-api:latest # set your Docker Hub username
+          imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - containerPort: 8082
           env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "tst"
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lbsite-db
+                  key: url
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: lbsite-db
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lbsite-db
+                  key: password
+            - name: DEVICE_REGISTRATION_URL
+              value: http://deviceregapi:8081

@@ -1,7 +1,7 @@
 image:
-  repository: ghcr.io/org/statisticsapi
+  repository: DOCKER_HUB_USERNAME/statistics-api
   tag: latest
 service:
-  port: 80
-  targetPort: 8080
+  port: 8082
+  targetPort: 8082
 replicaCount: 1

@@ -1,0 +1,20 @@
+# Helmfile to deploy the umbrella chart (lbsite)
+# Usage examples:
+# - helmfile -e tst apply
+# - helmfile -e prd apply
+
+environments:
+  tst:
+    values:
+      - values/tst.yaml
+  prd:
+    values:
+      - values/prd.yaml
+
+releases:
+  - name: lbsite
+    namespace: {{ .Environment.Name | default "lbsite-tst" }}
+    chart: ./
+    values:
+      # Umbrella chart default values + the environment overrides above
+      - values.yaml
