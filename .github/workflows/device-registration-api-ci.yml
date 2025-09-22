@@ -71,7 +71,7 @@ jobs:
           path: application/lbsite/DeviceRegistrationAPI/target/*.jar
           if-no-files-found: error
 
-  docker:
+  publish:
     runs-on: ubuntu-latest
     needs: build
     defaults:
@@ -95,9 +95,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_HUB_USERNAME  }}/device-registration-api
+          images: ${{ secrets.DOCKER_HUB_USERNAME }}/device-registration-api
           tags: |
             type=raw,value=latest
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -108,3 +109,27 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Determine chart version
+        id: ver
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          echo "version=0.1.0-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Helm registry login (Docker Hub)
+        env:
+          DH_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        run: |
+          echo "$DH_TOKEN" | helm registry login registry-1.docker.io -u "$DH_USER" --password-stdin
+
+      - name: Package and push deviceregapi chart
+        working-directory: infrastructure/helm/deviceregapi
+        run: |
+          helm package . --version "${{ steps.ver.outputs.version }}"
+          helm push deviceregapi-${{ steps.ver.outputs.version }}.tgz oci://registry-1.docker.io/${{ secrets.DOCKER_HUB_USERNAME }}

@@ -1,7 +1,7 @@
 image:
-  repository: ghcr.io/org/deviceregapi
+  repository: DOCKER_HUB_USERNAME/device-registration-api
   tag: latest
 service:
-  port: 80
-  targetPort: 8080
+  port: 8081
+  targetPort: 8081
 replicaCount: 1

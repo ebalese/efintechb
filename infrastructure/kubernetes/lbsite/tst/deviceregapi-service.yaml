@@ -9,5 +9,5 @@ spec:
     app: deviceregapi
   ports:
     - name: http
-      port: 80
-      targetPort: 8080
+      port: 8081
+      targetPort: 8081
