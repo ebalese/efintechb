@@ -23,9 +23,9 @@ jobs:
         with:
           cmd: |
             yq -i '.statisticsapi.image.repository = "${{ secrets.DOCKER_HUB_USERNAME }}/statistics-api"' infrastructure/helm/lbsite/values/tst.yaml
-            yq -i '.statisticsapi.image.tag = "latest"' infrastructure/helm/lbsite/values/tst.yaml
+            yq -i '.statisticsapi.image.tag = "${{ github.sha }}"' infrastructure/helm/lbsite/values/tst.yaml
             yq -i '.deviceregapi.image.repository = "${{ secrets.DOCKER_HUB_USERNAME }}/device-registration-api"' infrastructure/helm/lbsite/values/tst.yaml
-            yq -i '.deviceregapi.image.tag = "latest"' infrastructure/helm/lbsite/values/tst.yaml
+            yq -i '.deviceregapi.image.tag = "${{ github.sha }}"' infrastructure/helm/lbsite/values/tst.yaml
 
       - name: Commit changes
         run: |
@@ -35,6 +35,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "ci(helm): promote TST values to latest"
+            git commit -m "ci(helm): promote TST values to ${GITHUB_SHA}"
             git push
           fi
