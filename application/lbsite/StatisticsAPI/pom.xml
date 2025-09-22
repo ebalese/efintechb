@@ -74,6 +74,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring.boot.version}</version>
                 <configuration>
+                    <mainClass>com.efintechb.lbsite.statistics.StatisticsApiApplication</mainClass>
                     <image>
                         <name>statistics-api:${project.version}</name>
                     </image>
@@ -83,9 +84,6 @@
                         <goals>
                             <goal>repackage</goal>
                         </goals>
-                        <configuration>
-                            <mainClass>com.efintechb.lbsite.statistics.StatisticsApiApplication</mainClass>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
