@@ -1,18 +1,18 @@
 statisticsapi:
   replicaCount: 1
   image:
-    repository: DOCKER_HUB_USERNAME/statistics-api
+    repository: balese/statistics-api
     tag: latest
   service:
     port: 8082
     targetPort: 8082
   env:
-    DEVICE_REGISTRATION_URL: http://lbsite-deviceregapi:8081
+    DEVICE_REGISTRATION_URL: http://lbsite-tst-deviceregapi:8081
 
 deviceregapi:
   replicaCount: 1
   image:
-    repository: DOCKER_HUB_USERNAME/device-registration-api
+    repository: balese/device-registration-api
     tag: latest
   service:
     port: 8081
