@@ -2,7 +2,8 @@ statisticsapi:
   replicaCount: 1
   image:
     repository: balese/statistics-api
-    tag: latest
+    tag: fix-manifest-2025-09-22
+    pullPolicy: Always
   service:
     type: NodePort
     port: 8082
@@ -18,7 +19,8 @@ deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
-    tag: latest
+    tag: fix-manifest-2025-09-22
+    pullPolicy: Always
   service:
     port: 8081
     targetPort: 8081
