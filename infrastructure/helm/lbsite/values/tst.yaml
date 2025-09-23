@@ -2,18 +2,17 @@ statisticsapi:
   replicaCount: 1
   image:
     repository: balese/statistics-api
-    tag: latest
+    tag: d605997455d75b1594b22d6ab8b0bf465237fc9a
   service:
     port: 8082
     targetPort: 8082
   env:
     DEVICE_REGISTRATION_URL: http://lbsite-tst-deviceregapi:8081
-
 deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
-    tag: latest
+    tag: d605997455d75b1594b22d6ab8b0bf465237fc9a
   service:
     port: 8081
     targetPort: 8081
