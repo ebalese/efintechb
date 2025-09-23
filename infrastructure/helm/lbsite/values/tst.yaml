@@ -2,7 +2,7 @@ statisticsapi:
   replicaCount: 1
   image:
     repository: balese/statistics-api
-    tag: latest
+    tag: f84f50b640828af49f7f96d79fbfeeb4bec3e05e
   service:
     type: NodePort
     port: 8082
@@ -13,12 +13,11 @@ statisticsapi:
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-tst-postgresql:5432/lbsite
     SPRING_DATASOURCE_USERNAME: lbuser
     SPRING_DATASOURCE_PASSWORD: lbpass
-
 deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
-    tag: latest
+    tag: f84f50b640828af49f7f96d79fbfeeb4bec3e05e
   service:
     port: 8081
     targetPort: 8081
