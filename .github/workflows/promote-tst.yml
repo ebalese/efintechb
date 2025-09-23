@@ -55,7 +55,7 @@ jobs:
           STAT_IMG="docker.io/${USER}/statistics-api:${SHA}"
           DEV_IMG="docker.io/${USER}/device-registration-api:${SHA}"
 
-          # Try to resolve digests; if images aren't published yet for this SHA, exit with a clear message.
+          # Try to resolve digests; if an image isn't published yet for this SHA, we'll skip updating that image.
           set +e
           STAT_DIGEST_FULL=$(docker buildx imagetools inspect "${STAT_IMG}" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
           STAT_RC=$?
@@ -64,34 +64,36 @@ jobs:
           set -e
 
           if [ "$STAT_RC" -ne 0 ] || [ -z "$STAT_DIGEST_FULL" ]; then
-            echo "::error::Could not resolve digest for ${STAT_IMG}. Ensure the CI pushed this image tag (commit SHA) to Docker Hub." >&2
-            exit 1
+            echo "::warning::Could not resolve digest for ${STAT_IMG}. Skipping statisticsapi update." >&2
           fi
           if [ "$DEV_RC" -ne 0 ] || [ -z "$DEV_DIGEST_FULL" ]; then
-            echo "::error::Could not resolve digest for ${DEV_IMG}. Ensure the CI pushed this image tag (commit SHA) to Docker Hub." >&2
-            exit 1
+            echo "::warning::Could not resolve digest for ${DEV_IMG}. Skipping deviceregapi update." >&2
           fi
 
           # Strip sha256: prefix for our Helm values (template prepends it)
           STAT_DIGEST=${STAT_DIGEST_FULL#sha256:}
           DEV_DIGEST=${DEV_DIGEST_FULL#sha256:}
 
-          echo "Resolved statistics-api digest: ${STAT_DIGEST_FULL}"
-          echo "Resolved device-registration-api digest: ${DEV_DIGEST_FULL}"
+          [ -n "$STAT_DIGEST_FULL" ] && echo "Resolved statistics-api digest: ${STAT_DIGEST_FULL}" || true
+          [ -n "$DEV_DIGEST_FULL" ] && echo "Resolved device-registration-api digest: ${DEV_DIGEST_FULL}" || true
 
           # Expose outputs for later steps (PR body)
-          echo "STAT_DIGEST=${STAT_DIGEST}" >> "$GITHUB_OUTPUT"
-          echo "DEV_DIGEST=${DEV_DIGEST}" >> "$GITHUB_OUTPUT"
+          [ -n "$STAT_DIGEST_FULL" ] && echo "STAT_DIGEST=${STAT_DIGEST}" >> "$GITHUB_OUTPUT" || true
+          [ -n "$DEV_DIGEST_FULL" ] && echo "DEV_DIGEST=${DEV_DIGEST}" >> "$GITHUB_OUTPUT" || true
           echo "DOCKER_ORG=${USER}" >> "$GITHUB_OUTPUT"
 
           # Update values/tst.yaml using yq
-          yq -i '.statisticsapi.image.repository = "'"${USER}/statistics-api"'"' infrastructure/helm/lbsite/values/tst.yaml
-          yq -i '.statisticsapi.image.digest = "'"${STAT_DIGEST}"'"' infrastructure/helm/lbsite/values/tst.yaml
-          yq -i 'del(.statisticsapi.image.tag)' infrastructure/helm/lbsite/values/tst.yaml
+          if [ -n "$STAT_DIGEST_FULL" ]; then
+            yq -i '.statisticsapi.image.repository = "'"${USER}/statistics-api"'"' infrastructure/helm/lbsite/values/tst.yaml
+            yq -i '.statisticsapi.image.digest = "'"${STAT_DIGEST}"'"' infrastructure/helm/lbsite/values/tst.yaml
+            yq -i 'del(.statisticsapi.image.tag)' infrastructure/helm/lbsite/values/tst.yaml
+          fi
 
-          yq -i '.deviceregapi.image.repository = "'"${USER}/device-registration-api"'"' infrastructure/helm/lbsite/values/tst.yaml
-          yq -i '.deviceregapi.image.digest = "'"${DEV_DIGEST}"'"' infrastructure/helm/lbsite/values/tst.yaml
-          yq -i 'del(.deviceregapi.image.tag)' infrastructure/helm/lbsite/values/tst.yaml
+          if [ -n "$DEV_DIGEST_FULL" ]; then
+            yq -i '.deviceregapi.image.repository = "'"${USER}/device-registration-api"'"' infrastructure/helm/lbsite/values/tst.yaml
+            yq -i '.deviceregapi.image.digest = "'"${DEV_DIGEST}"'"' infrastructure/helm/lbsite/values/tst.yaml
+            yq -i 'del(.deviceregapi.image.tag)' infrastructure/helm/lbsite/values/tst.yaml
+          fi
 
       - name: Detect changes
         id: diff
