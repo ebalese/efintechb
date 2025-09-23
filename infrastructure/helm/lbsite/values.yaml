@@ -2,9 +2,9 @@
 statisticsapi:
   replicaCount: 1
   image:
-    repository: DOCKER_HUB_USERNAME/statistics-api
-    tag: latest
-    pullPolicy: IfNotPresent
+    repository: balese/statistics-api
+    tag: fix-manifest-2025-09-22
+    pullPolicy: Always
   service:
     port: 8082
     targetPort: 8082
@@ -13,9 +13,9 @@ statisticsapi:
 deviceregapi:
   replicaCount: 1
   image:
-    repository: DOCKER_HUB_USERNAME/device-registration-api
-    tag: latest
-    pullPolicy: IfNotPresent
+    repository: balese/device-registration-api
+    tag: fix-manifest-2025-09-22
+    pullPolicy: Always
   service:
     port: 8081
     targetPort: 8081
