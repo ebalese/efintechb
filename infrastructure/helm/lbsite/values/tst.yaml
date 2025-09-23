@@ -2,7 +2,7 @@ statisticsapi:
   replicaCount: 1
   image:
     repository: balese/statistics-api
-    tag: fix-manifest-2025-09-22
+    tag: 85080bd22d4325e86e76ba2181197ac3ede90972
     pullPolicy: Always
   service:
     type: NodePort
@@ -14,12 +14,11 @@ statisticsapi:
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-tst-postgresql:5432/lbsite
     SPRING_DATASOURCE_USERNAME: lbuser
     SPRING_DATASOURCE_PASSWORD: lbpass
-
 deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
-    tag: fix-manifest-2025-09-22
+    tag: 85080bd22d4325e86e76ba2181197ac3ede90972
     pullPolicy: Always
   service:
     port: 8081
