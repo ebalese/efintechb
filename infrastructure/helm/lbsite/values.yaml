@@ -1,4 +1,10 @@
 # Default umbrella values (can be overridden by values/tst.yaml or values/prd.yaml)
+global:
+  db:
+    name: lbsite
+    user: lbuser
+    password: lbpass
+
 statisticsapi:
   replicaCount: 1
   image:
@@ -20,3 +26,13 @@ deviceregapi:
     port: 8081
     targetPort: 8081
   env: {}
+
+postgresql:
+  auth:
+    username: lbuser
+    password: lbpass
+    database: lbsite
+  primary:
+    service:
+      ports:
+        postgresql: 5432
