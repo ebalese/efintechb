@@ -2,7 +2,7 @@ statisticsapi:
   replicaCount: 1
   image:
     repository: balese/statistics-api
-    tag: fix-manifest-2025-09-22
+    tag: latest  # fallback; CI promotion will set image.digest immutably
     pullPolicy: Always
   service:
     type: NodePort
@@ -19,7 +19,7 @@ deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
-    tag: fix-manifest-2025-09-22
+    tag: latest  # fallback; CI promotion will set image.digest immutably
     pullPolicy: Always
   service:
     port: 8081
