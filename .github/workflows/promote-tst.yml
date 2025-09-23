@@ -13,6 +13,10 @@ jobs:
   update-values:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+      GITHUB_OWNER: ${{ github.repository_owner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,11 +26,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker login
+      - name: Docker login (optional)
+        if: ${{ env.DOCKER_HUB_USERNAME != '' && env.DOCKER_HUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ env.DOCKER_HUB_TOKEN }}
 
       - name: Install yq
         shell: bash
@@ -40,14 +45,32 @@ jobs:
         run: |
           set -euo pipefail
           SHA="${{ github.event.workflow_run.head_sha }}"
-          USER="${{ secrets.DOCKER_HUB_USERNAME }}"
+          # Determine Docker org: prefer DOCKER_HUB_USERNAME, fallback to GitHub owner
+          USER="${DOCKER_HUB_USERNAME:-}"
+          if [ -z "$USER" ]; then
+            USER="${GITHUB_OWNER}"
+          fi
 
           # Resolve digests for images tagged with the commit SHA
           STAT_IMG="docker.io/${USER}/statistics-api:${SHA}"
           DEV_IMG="docker.io/${USER}/device-registration-api:${SHA}"
 
-          STAT_DIGEST_FULL=$(docker buildx imagetools inspect "${STAT_IMG}" --format '{{json .Manifest.Digest}}' | tr -d '"')
-          DEV_DIGEST_FULL=$(docker buildx imagetools inspect "${DEV_IMG}" --format '{{json .Manifest.Digest}}' | tr -d '"')
+          # Try to resolve digests; if images aren't published yet for this SHA, exit with a clear message.
+          set +e
+          STAT_DIGEST_FULL=$(docker buildx imagetools inspect "${STAT_IMG}" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
+          STAT_RC=$?
+          DEV_DIGEST_FULL=$(docker buildx imagetools inspect "${DEV_IMG}" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
+          DEV_RC=$?
+          set -e
+
+          if [ "$STAT_RC" -ne 0 ] || [ -z "$STAT_DIGEST_FULL" ]; then
+            echo "::error::Could not resolve digest for ${STAT_IMG}. Ensure the CI pushed this image tag (commit SHA) to Docker Hub." >&2
+            exit 1
+          fi
+          if [ "$DEV_RC" -ne 0 ] || [ -z "$DEV_DIGEST_FULL" ]; then
+            echo "::error::Could not resolve digest for ${DEV_IMG}. Ensure the CI pushed this image tag (commit SHA) to Docker Hub." >&2
+            exit 1
+          fi
 
           # Strip sha256: prefix for our Helm values (template prepends it)
           STAT_DIGEST=${STAT_DIGEST_FULL#sha256:}
@@ -59,6 +82,7 @@ jobs:
           # Expose outputs for later steps (PR body)
           echo "STAT_DIGEST=${STAT_DIGEST}" >> "$GITHUB_OUTPUT"
           echo "DEV_DIGEST=${DEV_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "DOCKER_ORG=${USER}" >> "$GITHUB_OUTPUT"
 
           # Update values/tst.yaml using yq
           yq -i '.statisticsapi.image.repository = "'"${USER}/statistics-api"'"' infrastructure/helm/lbsite/values/tst.yaml
@@ -88,8 +112,8 @@ jobs:
           title: "Promote TST to digests for sha:${{ github.event.workflow_run.head_sha }}"
           body: |
             This PR updates TST Helm values to deploy images (pinned by digest) built from CI commit `${{ github.event.workflow_run.head_sha }}`:
-            - statisticsapi: `${{ secrets.DOCKER_HUB_USERNAME }}/statistics-api@sha256:${{ steps.update-values.outputs.STAT_DIGEST }}`
-            - deviceregapi: `${{ secrets.DOCKER_HUB_USERNAME }}/device-registration-api@sha256:${{ steps.update-values.outputs.DEV_DIGEST }}`
+            - statisticsapi: `${{ steps.update-values.outputs.DOCKER_ORG }}/statistics-api@sha256:${{ steps.update-values.outputs.STAT_DIGEST }}`
+            - deviceregapi: `${{ steps.update-values.outputs.DOCKER_ORG }}/device-registration-api@sha256:${{ steps.update-values.outputs.DEV_DIGEST }}`
           branch: ci/promote-tst-${{ github.event.workflow_run.head_sha }}
           base: main
           add-paths: |
