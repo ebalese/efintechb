@@ -1,8 +1,8 @@
 apiVersion: v2
 name: lbsite
-version: 0.1.1
+version: 0.1.2
 description: Umbrella chart for lbsite applications
-appVersion: "0.1.1"
+appVersion: "0.1.2"
 dependencies:
   - name: statisticsapi
     version: ">=0.0.0-0"
