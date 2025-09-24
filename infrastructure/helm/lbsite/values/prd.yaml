@@ -2,7 +2,7 @@ statisticsapi:
   replicaCount: 3
   image:
     repository: balese/statistics-api
-    tag: stable
+    tag: latest  # fallback; Promote PRD will set release tag
     pullPolicy: Always
   service:
     type: NodePort
@@ -20,7 +20,7 @@ deviceregapi:
   replicaCount: 3
   image:
     repository: balese/device-registration-api
-    tag: stable
+    tag: latest  # fallback; Promote PRD will set release tag
     pullPolicy: Always
   service:
     port: 8081
