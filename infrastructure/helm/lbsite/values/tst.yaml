@@ -3,7 +3,7 @@ statisticsapi:
   image:
     repository: balese/statistics-api
     pullPolicy: Always
-    digest: a7c8d6d27c407ecf2a67b9dfaeeea8e4377256e8da46838c7bbced99774fbc35
+    digest: f4af6f62d9be7a2d72920a3f88ec12fa0ad561576d9aac7f3f23f735c7edf1f2
   service:
     type: NodePort
     port: 8082
@@ -19,7 +19,7 @@ deviceregapi:
   image:
     repository: balese/device-registration-api
     pullPolicy: Always
-    digest: fe7c10132b8f18bcd33ae7eabf07e075df7cec1e5ddb3f4669f4ffabbdeda5bf
+    digest: acb89690b772b2287069fc77eb54a7c3dd9165a7c2fb0ad060f829f9732ca45f
   service:
     port: 8081
     targetPort: 8081
