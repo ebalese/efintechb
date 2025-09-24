@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - 'main'
+    tags:
+      - 'v*'
     paths:
       - 'application/lbsite/StatisticsAPI/**'
       - '.github/workflows/statistics-api-ci.yml'
@@ -101,6 +103,7 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha
+            type=ref,event=tag
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
