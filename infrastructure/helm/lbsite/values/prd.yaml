@@ -2,7 +2,7 @@ statisticsapi:
   replicaCount: 3
   image:
     repository: balese/statistics-api
-    tag: latest  # fallback; Promote PRD will set release tag
+    tag: v0.1.1 # fallback; Promote PRD will set release tag
     pullPolicy: Always
   service:
     type: NodePort
@@ -15,12 +15,11 @@ statisticsapi:
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-prd-postgresql:5432/lbsite
     SPRING_DATASOURCE_USERNAME: lbuser
     SPRING_DATASOURCE_PASSWORD: lbpass
-
 deviceregapi:
   replicaCount: 3
   image:
     repository: balese/device-registration-api
-    tag: latest  # fallback; Promote PRD will set release tag
+    tag: v0.1.1 # fallback; Promote PRD will set release tag
     pullPolicy: Always
   service:
     port: 8081
