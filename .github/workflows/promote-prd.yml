@@ -1,8 +1,9 @@
 name: Promote to PRD (Helm)
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -11,7 +12,8 @@ permissions:
 jobs:
   update-values:
     runs-on: ubuntu-latest
-    if: ${{ github.event.release.target_commitish == 'main' }}
+    # Only proceed if the tag was pushed to the main branch's history
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,8 +24,8 @@ jobs:
         uses: mikefarah/yq@v4.43.1
         with:
           cmd: |
-            yq -i '.statisticsapi.image.tag = "${{ github.event.release.tag_name }}"' infrastructure/helm/lbsite/values/prd.yaml
-            yq -i '.deviceregapi.image.tag = "${{ github.event.release.tag_name }}"' infrastructure/helm/lbsite/values/prd.yaml
+            yq -i '.statisticsapi.image.tag = "${{ github.ref_name }}"' infrastructure/helm/lbsite/values/prd.yaml
+            yq -i '.deviceregapi.image.tag = "${{ github.ref_name }}"' infrastructure/helm/lbsite/values/prd.yaml
 
       - name: Detect changes
         id: diff
@@ -40,13 +42,13 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "ci(helm): promote PRD values to tag:${{ github.event.release.tag_name }}"
-          title: "Promote PRD to tag:${{ github.event.release.tag_name }}"
+          commit-message: "ci(helm): promote PRD values to tag:${{ github.ref_name }}"
+          title: "Promote PRD to tag:${{ github.ref_name }}"
           body: |
-            This PR updates PRD Helm values to deploy images built for release tag `${{ github.event.release.tag_name }}`:
-            - statisticsapi: `balese/statistics-api:${{ github.event.release.tag_name }}`
-            - deviceregapi: `balese/device-registration-api:${{ github.event.release.tag_name }}`
-          branch: ci/promote-prd-${{ github.event.release.tag_name }}
+            This PR updates PRD Helm values to deploy images built for tag `${{ github.ref_name }}`:
+            - statisticsapi: `balese/statistics-api:${{ github.ref_name }}`
+            - deviceregapi: `balese/device-registration-api:${{ github.ref_name }}`
+          branch: ci/promote-prd-${{ github.ref_name }}
           base: main
           add-paths: |
             infrastructure/helm/lbsite/values/prd.yaml
