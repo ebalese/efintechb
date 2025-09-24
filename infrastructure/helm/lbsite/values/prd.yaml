@@ -9,12 +9,12 @@ statisticsapi:
     port: 8082
     targetPort: 8082
     nodePort: 30092
+  secret:
+    name: lbsite-prd-db
   env:
     DEVICE_REGISTRATION_URL: http://lbsite-prd-deviceregapi:8081
     # Points to the PostgreSQL service created by the umbrella chart in the prd namespace
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-prd-postgresql:5432/lbsite
-    SPRING_DATASOURCE_USERNAME: lbuser
-    SPRING_DATASOURCE_PASSWORD: lbpass
 deviceregapi:
   replicaCount: 3
   image:
@@ -24,7 +24,7 @@ deviceregapi:
   service:
     port: 8081
     targetPort: 8081
+  secret:
+    name: lbsite-prd-db
   env:
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-prd-postgresql:5432/lbsite
-    SPRING_DATASOURCE_USERNAME: lbuser
-    SPRING_DATASOURCE_PASSWORD: lbpass
