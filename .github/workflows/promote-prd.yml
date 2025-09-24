@@ -1,0 +1,55 @@
+name: Promote to PRD (Helm)
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-values:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.release.target_commitish == 'main' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set PRD image tags from release tag
+        uses: mikefarah/yq@v4.43.1
+        with:
+          cmd: |
+            yq -i '.statisticsapi.image.tag = "${{ github.event.release.tag_name }}"' infrastructure/helm/lbsite/values/prd.yaml
+            yq -i '.deviceregapi.image.tag = "${{ github.event.release.tag_name }}"' infrastructure/helm/lbsite/values/prd.yaml
+
+      - name: Detect changes
+        id: diff
+        run: |
+          git add infrastructure/helm/lbsite/values/prd.yaml
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request for PRD values update
+        uses: peter-evans/create-pull-request@v6
+        if: steps.diff.outputs.changed == 'true'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "ci(helm): promote PRD values to tag:${{ github.event.release.tag_name }}"
+          title: "Promote PRD to tag:${{ github.event.release.tag_name }}"
+          body: |
+            This PR updates PRD Helm values to deploy images built for release tag `${{ github.event.release.tag_name }}`:
+            - statisticsapi: `balese/statistics-api:${{ github.event.release.tag_name }}`
+            - deviceregapi: `balese/device-registration-api:${{ github.event.release.tag_name }}`
+          branch: ci/promote-prd-${{ github.event.release.tag_name }}
+          base: main
+          add-paths: |
+            infrastructure/helm/lbsite/values/prd.yaml
+          labels: |
+            ci
+            promote-prd

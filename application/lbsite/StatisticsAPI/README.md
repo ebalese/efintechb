@@ -96,3 +96,19 @@ Sample:
 { "deviceType": "iOS", "count": 1 }
 ```
 
+## Health / Actuator
+
+The service exposes Spring Boot Actuator health endpoints for Kubernetes probes and diagnostics.
+
+- Liveness: `GET /actuator/health/liveness`
+- Readiness: `GET /actuator/health/readiness`
+- Overall health: `GET /actuator/health`
+
+Examples:
+
+```bash
+curl -s http://localhost:8082/actuator/health | jq
+curl -s http://localhost:8082/actuator/health/liveness
+curl -s http://localhost:8082/actuator/health/readiness
+```
+
