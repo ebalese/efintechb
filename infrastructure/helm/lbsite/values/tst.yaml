@@ -2,8 +2,8 @@ statisticsapi:
   replicaCount: 1
   image:
     repository: balese/statistics-api
-    tag: latest  # fallback; CI promotion will set image.digest immutably
     pullPolicy: Always
+    digest: 77c0103c78266f01a249430f684e13a359cdfacfc0da2ba50021baec5360abf8
   service:
     type: NodePort
     port: 8082
@@ -14,13 +14,12 @@ statisticsapi:
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-tst-postgresql:5432/lbsite
     SPRING_DATASOURCE_USERNAME: lbuser
     SPRING_DATASOURCE_PASSWORD: lbpass
-
 deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
-    tag: latest  # fallback; CI promotion will set image.digest immutably
     pullPolicy: Always
+    digest: aa162b2d4c084e3146ef33c34cc4263757ecdeaa6f319c1bc848d39276f5b639
   service:
     port: 8081
     targetPort: 8081
