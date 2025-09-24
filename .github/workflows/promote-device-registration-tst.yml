@@ -1,0 +1,117 @@
+name: Promote DeviceRegistrationAPI to TST (Helm)
+
+on:
+  workflow_run:
+    workflows: ["DeviceRegistrationAPI CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: promote-tst-devicereg
+  cancel-in-progress: true
+
+jobs:
+  update-values:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+      GITHUB_OWNER: ${{ github.repository_owner }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Guard (only latest commit on main)
+        id: guard
+        run: |
+          git fetch --no-tags origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          RUN_SHA='${{ github.event.workflow_run.head_sha }}'
+          if [ "$RUN_SHA" != "$MAIN_SHA" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        if: steps.guard.outputs.skip != 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker login
+        if: steps.guard.outputs.skip != 'true' && env.DOCKER_HUB_USERNAME && env.DOCKER_HUB_TOKEN
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ env.DOCKER_HUB_TOKEN }}
+
+      - name: Resolve device-registration-api digest
+        if: steps.guard.outputs.skip != 'true'
+        id: digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA='${{ github.event.workflow_run.head_sha }}'
+          SHORT_SHA="${SHA:0:7}"
+          USER="${DOCKER_HUB_USERNAME:-${GITHUB_OWNER}}"
+          CANDIDATES=(
+            "docker.io/${USER}/device-registration-api:sha-${SHORT_SHA}"
+            "docker.io/${USER}/device-registration-api:${SHA}"
+            "docker.io/${USER}/device-registration-api:${SHORT_SHA}"
+          )
+          resolve() {
+            local img; local tries=2; local sleep_s=2
+            for img in "$@"; do
+              for ((i=1; i<=tries; i++)); do
+                DIG=$(docker buildx imagetools inspect "$img" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"') || true
+                if [ -n "$DIG" ]; then echo "$DIG"; return 0; fi
+                sleep "$sleep_s"
+              done
+            done
+            return 1
+          }
+          DIGEST_FULL=$(resolve "${CANDIDATES[@]}") || true
+          if [ -z "$DIGEST_FULL" ]; then
+            echo "No digest found for device-registration-api" >&2
+            exit 0
+          fi
+          echo "DIGEST=${DIGEST_FULL#sha256:}" >> "$GITHUB_OUTPUT"
+          echo "ORG=${USER}" >> "$GITHUB_OUTPUT"
+
+      - name: Update Helm TST values (deviceregapi)
+        if: steps.guard.outputs.skip != 'true' && steps.digest.outputs.DIGEST
+        run: |
+          yq -i '.deviceregapi.image.repository = "'"${{ steps.digest.outputs.ORG }}/device-registration-api"'" |
+                 .deviceregapi.image.digest = "'"${{ steps.digest.outputs.DIGEST }}"'" |
+                 del(.deviceregapi.image.tag)' infrastructure/helm/lbsite/values/tst.yaml
+
+      - name: Detect changes
+        if: steps.guard.outputs.skip != 'true'
+        id: diff
+        run: |
+          git add infrastructure/helm/lbsite/values/tst.yaml
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create PR for TST values (deviceregapi)
+        if: steps.guard.outputs.skip != 'true' && steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "ci(helm): promote TST (deviceregapi) to sha:${{ github.event.workflow_run.head_sha }}"
+          title: "Promote TST (deviceregapi) to sha:${{ github.event.workflow_run.head_sha }}"
+          body: |
+            This PR updates TST Helm values to deploy device-registration-api pinned by digest from `${{ github.event.workflow_run.head_sha }}`:
+            - deviceregapi: `${{ steps.digest.outputs.ORG }}/device-registration-api@sha256:${{ steps.digest.outputs.DIGEST }}`
+          branch: ci/promote-tst-devicereg
+          base: main
+          add-paths: infrastructure/helm/lbsite/values/tst.yaml
+          labels: ci,promote-tst,device-registration-api
