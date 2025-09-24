@@ -3,7 +3,7 @@ statisticsapi:
   image:
     repository: balese/statistics-api
     pullPolicy: Always
-    digest: a7c8d6d27c407ecf2a67b9dfaeeea8e4377256e8da46838c7bbced99774fbc35
+    digest: ""
   secret:
     name: lbsite-tst-db
   service:
@@ -14,13 +14,12 @@ statisticsapi:
   env:
     DEVICE_REGISTRATION_URL: http://lbsite-tst-deviceregapi:8081
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-tst-postgresql:5432/lbsite
-
 deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
     pullPolicy: Always
-    digest: fe7c10132b8f18bcd33ae7eabf07e075df7cec1e5ddb3f4669f4ffabbdeda5bf
+    digest: ""
   secret:
     name: lbsite-tst-db
   service:
