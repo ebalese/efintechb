@@ -99,6 +99,8 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha
+            type=sha,format=long
+            type=raw,value=${{ github.sha }}
             type=ref,event=tag
 
       - name: Build and push Docker image
