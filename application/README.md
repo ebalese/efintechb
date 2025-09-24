@@ -140,3 +140,35 @@ echo "http://$(minikube ip):30092/Log/auth/statistics?deviceType=IOS"
 
 ---
 This README is a quick ops/dev guide. If you need deeper details (schema, endpoints, DB), consider adding service-level READMEs under each service directory.
+
+## Compliance checks
+
+The repo includes a simple compliance/security scan workflow: `/.github/workflows/compliance-framework.yml`.
+
+- What it does
+  - Builds Docker images locally for each service:
+    - `application/lbsite/DeviceRegistrationAPI`
+    - `application/lbsite/StatisticsAPI`
+  - Runs Trivy vulnerability scans on those images.
+  - Uploads results as SARIF to GitHub Security.
+  - Fails the job on findings (Trivy `exit-code: '1'`).
+
+- How to run
+  - Trigger manually from GitHub Actions: “Compliance Framework” (workflow_dispatch).
+
+- Where to see results
+  - Repository `Security` tab → `Code scanning alerts`.
+  - Open the workflow run → download/view the SARIF artifacts:
+    - `trivy-results-device-registration-api.sarif`
+    - `trivy-results-statistics-api.sarif`
+
+- Interpreting failures
+  - The job fails if vulnerabilities are detected. Review alerts in the Security tab.
+  - To remediate:
+    - Update base images (e.g., `FROM eclipse-temurin:17-jre` to a patched version).
+    - Upgrade dependencies in Maven `pom.xml`.
+    - Rebuild and re-run the scan.
+
+- Mandatory in CI
+  - The compliance scan is treated as a mandatory gate in CI. Pull requests must have a passing “Compliance Framework” check before they can be merged to `main`.
+  - Enforce this via repository Branch protection rules by marking the “Compliance Framework” workflow as a required status check.
