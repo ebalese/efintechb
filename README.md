@@ -48,7 +48,7 @@ Umbrella chart path: `infrastructure/helm/lbsite/`
 - The PostgreSQL chart is installed into the same namespace as the release, e.g. `lbsite-tst`.
 - Service connection (tst):
   - JDBC URL: `jdbc:postgresql://lbsite-tst-postgresql:5432/lbsite`
-  - Credentials are configured via Helm values (do not commit real secrets).
+  - Credentials are provided via Kubernetes Secrets (referenced by the charts); avoid committing real secrets to Git.
 
 Common commands:
 ```bash
@@ -64,6 +64,12 @@ helm upgrade --install lbsite-prd . -n lbsite-prd -f values/prd.yaml
 
 ## Image tags and pulling in Kubernetes
 - Use unique image tags and set `image.pullPolicy: Always` (configured in umbrella `values.yaml`) to ensure nodes pull updated images.
+- Service CI publishes the following tags per build:
+  - `latest`
+  - `sha-<shortsha>`
+  - `sha-<40charsha>`
+  - `<40charsha>`
+  - `vX.Y.Z` on tag pushes (release tags)
 
 ## Notes
 - To debug in Kubernetes, port-forward the pod/deployment debug port (5005) and attach a Remote JVM Debugger.
@@ -79,16 +85,16 @@ This repository uses GitHub Actions for CI and Argo CD for CD.
   - Per-service CI runs on pull requests and pushes (e.g., to `main`).
   - On tag push (`v*`), images are built and pushed with the tag value to Docker Hub.
 
-- **Compliance checks**
-  - Maven build with tests (can be skipped with `-DskipTests` in CI where needed).
-  - Basic validation (formatting/linting can be expanded in future PRs).
+- **Compliance checks (mandatory)**
+  - Trivy container vulnerability scans run via `/.github/workflows/compliance-framework.yml`.
+  - Results are uploaded as SARIF to the Security tab (Code scanning alerts).
+  - Make this a required status check in Branch protection so PRs must pass before merge.
 
 - **Build & Image tagging**
   - Build JARs via Maven (`spring-boot-maven-plugin`).
   - Build Docker images with Buildx and push to Docker Hub.
-  - Tags used:
-    - On normal CI (push to branches): `${{ github.sha }}`.
-    - On release/tag push: `${{ github.ref_name }}` (e.g., `v1.2.0`).
+  - Tags used on branch pushes: `latest`, `sha-<shortsha>`, `sha-<40charsha>`, `<40charsha>`.
+  - Tags used on tag pushes: `vX.Y.Z` (plus the above sha variants also present for the commit).
 
 ### CD (Argo CD)
 
@@ -103,13 +109,33 @@ This repository uses GitHub Actions for CI and Argo CD for CD.
 
 - **TST (digest pinned)**
   - Workflow: `.github/workflows/promote-tst.yml` (trigger: a successful CI workflow for either service).
-  - Resolves Docker image digests for the triggering commit SHA and writes them to `infrastructure/helm/lbsite/values/tst.yaml` as `image.digest` (removes `image.tag`).
+  - Resolves Docker image digests for the triggering commit by checking tags (`sha-<shortsha>`, `<fullsha>`, `<shortsha>`) and writes them to `infrastructure/helm/lbsite/values/tst.yaml` as `image.digest` (removes `image.tag`). Includes retries to avoid registry lag, and an optional `:latest` fallback (warned as mutable).
   - Opens a PR with the digest updates; merging it triggers Argo CD to deploy immutable digests.
 
 - **PRD (tag-based)**
   - Workflow: `.github/workflows/promote-prd.yml` (trigger: push of a tag matching `v*`).
   - Updates `infrastructure/helm/lbsite/values/prd.yaml` to set both services' `image.tag` to `${{ github.ref_name }}` (e.g., `v1.2.0`).
   - Opens a PR; merging it triggers Argo CD to deploy those release tags.
+
+### Secrets management
+
+- Application containers read DB credentials from environment variables `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`, which are now sourced from Kubernetes Secrets via `valueFrom.secretKeyRef` in the service charts.
+- Configuration:
+  - `values/tst.yaml` and `values/prd.yaml` specify a Secret name per service (e.g., `statisticsapi.secret.name: lbsite-tst-db`).
+  - DB URL (`SPRING_DATASOURCE_URL`) and non-sensitive configs remain in `values/*.yaml`.
+- Bootstrap (one-time per environment):
+  - TST:
+    ```bash
+    kubectl -n lbsite-tst create secret generic lbsite-tst-db \
+      --from-literal=username=lbuser \
+      --from-literal=password=lbpass
+    ```
+  - PRD:
+    ```bash
+    kubectl -n lbsite-prd create secret generic lbsite-prd-db \
+      --from-literal=username=lbuser \
+      --from-literal=password=lbpass
+    ```
 
 ### Required Secrets (GitHub Actions)
 

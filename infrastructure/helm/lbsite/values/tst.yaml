@@ -3,7 +3,9 @@ statisticsapi:
   image:
     repository: balese/statistics-api
     pullPolicy: Always
-    digest: 445bf170aa633c815243751137fb226d5a9f48e1de9e7ba89aed5eb41b213357
+    digest: a7c8d6d27c407ecf2a67b9dfaeeea8e4377256e8da46838c7bbced99774fbc35
+  secret:
+    name: lbsite-tst-db
   service:
     type: NodePort
     port: 8082
@@ -12,18 +14,17 @@ statisticsapi:
   env:
     DEVICE_REGISTRATION_URL: http://lbsite-tst-deviceregapi:8081
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-tst-postgresql:5432/lbsite
-    SPRING_DATASOURCE_USERNAME: lbuser
-    SPRING_DATASOURCE_PASSWORD: lbpass
+
 deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
     pullPolicy: Always
-    digest: da3875f0f31c58a815924f0ff21948270c609e3a2944f8fa5348f725c14458fe
+    digest: fe7c10132b8f18bcd33ae7eabf07e075df7cec1e5ddb3f4669f4ffabbdeda5bf
+  secret:
+    name: lbsite-tst-db
   service:
     port: 8081
     targetPort: 8081
   env:
     SPRING_DATASOURCE_URL: jdbc:postgresql://lbsite-tst-postgresql:5432/lbsite
-    SPRING_DATASOURCE_USERNAME: lbuser
-    SPRING_DATASOURCE_PASSWORD: lbpass
