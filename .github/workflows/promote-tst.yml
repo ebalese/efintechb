@@ -45,41 +45,94 @@ jobs:
         run: |
           set -euo pipefail
           SHA="${{ github.event.workflow_run.head_sha }}"
+          SHORT_SHA="${SHA:0:7}"
           # Determine Docker org: prefer DOCKER_HUB_USERNAME, fallback to GitHub owner
           USER="${DOCKER_HUB_USERNAME:-}"
           if [ -z "$USER" ]; then
             USER="${GITHUB_OWNER}"
           fi
 
-          # Resolve digests for images tagged with the commit SHA
-          STAT_IMG="docker.io/${USER}/statistics-api:${SHA}"
-          DEV_IMG="docker.io/${USER}/device-registration-api:${SHA}"
+          # Resolve digests for images tagged by service CI.
+          # docker/metadata-action@v5 with 'type=sha' produces tags like: sha-<shortsha>
+          # We'll try in order: sha-<shortsha>, <fullsha>, <shortsha>
+          STAT_CANDIDATES=(
+            "docker.io/${USER}/statistics-api:sha-${SHORT_SHA}"
+            "docker.io/${USER}/statistics-api:${SHA}"
+            "docker.io/${USER}/statistics-api:${SHORT_SHA}"
+          )
+          DEV_CANDIDATES=(
+            "docker.io/${USER}/device-registration-api:sha-${SHORT_SHA}"
+            "docker.io/${USER}/device-registration-api:${SHA}"
+            "docker.io/${USER}/device-registration-api:${SHORT_SHA}"
+          )
 
-          # Try to resolve digests; if an image isn't published yet for this SHA, we'll skip updating that image.
+          # Try to resolve digests with retries; registry propagation can lag.
+          resolve_digest() {
+            local img; local tries=6; local sleep_s=10
+            for img in "$@"; do
+              for ((i=1; i<=tries; i++)); do
+                DIG=$(docker buildx imagetools inspect "$img" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
+                if [ -n "$DIG" ]; then
+                  echo "$DIG|$img"
+                  return 0
+                fi
+                echo "Digest not available yet for $img (attempt $i/$tries). Retrying in ${sleep_s}s..." >&2
+                sleep "$sleep_s"
+              done
+            done
+            return 1
+          }
+
           set +e
-          STAT_DIGEST_FULL=$(docker buildx imagetools inspect "${STAT_IMG}" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
+          RES_STAT=$(resolve_digest "${STAT_CANDIDATES[@]}")
           STAT_RC=$?
-          DEV_DIGEST_FULL=$(docker buildx imagetools inspect "${DEV_IMG}" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
+          RES_DEV=$(resolve_digest "${DEV_CANDIDATES[@]}")
           DEV_RC=$?
           set -e
 
-          if [ "$STAT_RC" -ne 0 ] || [ -z "$STAT_DIGEST_FULL" ]; then
-            echo "::warning::Could not resolve digest for ${STAT_IMG}. Skipping statisticsapi update." >&2
+          STAT_DIGEST_FULL=""; STAT_SRC=""; STAT_FALLBACK="false"
+          if [ "$STAT_RC" -eq 0 ] && [ -n "$RES_STAT" ]; then
+            STAT_DIGEST_FULL="${RES_STAT%%|*}"
+            STAT_SRC="${RES_STAT#*|}"
+          else
+            echo "::warning::Could not resolve digest for any of: ${STAT_CANDIDATES[*]}. Trying fallback :latest (mutable) for statisticsapi." >&2
+            RES_STAT=$(resolve_digest "docker.io/${USER}/statistics-api:latest") || true
+            if [ -n "$RES_STAT" ]; then
+              STAT_DIGEST_FULL="${RES_STAT%%|*}"
+              STAT_SRC="${RES_STAT#*|}"
+              STAT_FALLBACK="true"
+            else
+              echo "::warning::Fallback :latest also unavailable for statisticsapi. Skipping update." >&2
+            fi
           fi
-          if [ "$DEV_RC" -ne 0 ] || [ -z "$DEV_DIGEST_FULL" ]; then
-            echo "::warning::Could not resolve digest for ${DEV_IMG}. Skipping deviceregapi update." >&2
+          DEV_DIGEST_FULL=""; DEV_SRC=""; DEV_FALLBACK="false"
+          if [ "$DEV_RC" -eq 0 ] && [ -n "$RES_DEV" ]; then
+            DEV_DIGEST_FULL="${RES_DEV%%|*}"
+            DEV_SRC="${RES_DEV#*|}"
+          else
+            echo "::warning::Could not resolve digest for any of: ${DEV_CANDIDATES[*]}. Trying fallback :latest (mutable) for deviceregapi." >&2
+            RES_DEV=$(resolve_digest "docker.io/${USER}/device-registration-api:latest") || true
+            if [ -n "$RES_DEV" ]; then
+              DEV_DIGEST_FULL="${RES_DEV%%|*}"
+              DEV_SRC="${RES_DEV#*|}"
+              DEV_FALLBACK="true"
+            else
+              echo "::warning::Fallback :latest also unavailable for deviceregapi. Skipping update." >&2
+            fi
           fi
 
           # Strip sha256: prefix for our Helm values (template prepends it)
           STAT_DIGEST=${STAT_DIGEST_FULL#sha256:}
           DEV_DIGEST=${DEV_DIGEST_FULL#sha256:}
 
-          [ -n "$STAT_DIGEST_FULL" ] && echo "Resolved statistics-api digest: ${STAT_DIGEST_FULL}" || true
-          [ -n "$DEV_DIGEST_FULL" ] && echo "Resolved device-registration-api digest: ${DEV_DIGEST_FULL}" || true
+          [ -n "$STAT_DIGEST_FULL" ] && echo "Resolved statistics-api digest: ${STAT_DIGEST_FULL} (from ${STAT_SRC})${STAT_FALLBACK:+ [FALLBACK]}" || true
+          [ -n "$DEV_DIGEST_FULL" ] && echo "Resolved device-registration-api digest: ${DEV_DIGEST_FULL} (from ${DEV_SRC})${DEV_FALLBACK:+ [FALLBACK]}" || true
 
           # Expose outputs for later steps (PR body)
           [ -n "$STAT_DIGEST_FULL" ] && echo "STAT_DIGEST=${STAT_DIGEST}" >> "$GITHUB_OUTPUT" || true
           [ -n "$DEV_DIGEST_FULL" ] && echo "DEV_DIGEST=${DEV_DIGEST}" >> "$GITHUB_OUTPUT" || true
+          echo "STAT_FALLBACK=${STAT_FALLBACK}" >> "$GITHUB_OUTPUT"
+          echo "DEV_FALLBACK=${DEV_FALLBACK}" >> "$GITHUB_OUTPUT"
           echo "DOCKER_ORG=${USER}" >> "$GITHUB_OUTPUT"
 
           # Update values/tst.yaml using yq
