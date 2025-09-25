@@ -101,17 +101,40 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create PR for TST values (statisticsapi)
+      - name: Check for sibling promote PR (devicereg)
         if: steps.guard.outputs.skip != 'true' && steps.diff.outputs.changed == 'true'
+        id: sibling
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # List open PRs to main and check for label promote-tst on a different branch
+          prs=$(curl -s -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main")
+          # sibling is devicereg workflow branch
+          sibling_branch="ci/promote-tst-devicereg"
+          open_sibling=$(echo "$prs" | jq -r \
+            	'.[] | select(.head.ref == "'"'${sibling_branch}'"'") | select(any(.labels[]?; .name=="promote-tst")) | .number' | head -n1)
+          if [ -n "${open_sibling}" ] && [ "${open_sibling}" != "null" ]; then
+            echo "sibling_open=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "sibling_open=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR for TST values (statisticsapi)
+        if: steps.guard.outputs.skip != 'true' && steps.diff.outputs.changed == 'true' && steps.sibling.outputs.sibling_open != 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "ci(helm): promote TST (statisticsapi) to sha:${{ github.event.workflow_run.head_sha }}"
-          title: "Promote TST (statisticsapi) to sha:${{ github.event.workflow_run.head_sha }}"
+          commit-message: "ci(helm): promote TST (statisticsapi)"
+          title: "Promote TST (statisticsapi)"
           body: |
-            This PR updates TST Helm values to deploy statistics-api pinned by digest from `${{ github.event.workflow_run.head_sha }}`:
+            This PR updates TST Helm values to deploy statistics-api pinned by digest.
+            Source commit: `${{ github.event.workflow_run.head_sha }}`
             - statisticsapi: `${{ steps.digest.outputs.ORG }}/statistics-api@sha256:${{ steps.digest.outputs.DIGEST }}`
           branch: ci/promote-tst-statistics
           base: main
           add-paths: infrastructure/helm/lbsite/values/tst.yaml
           labels: ci,promote-tst,statistics-api
+          delete-branch: true

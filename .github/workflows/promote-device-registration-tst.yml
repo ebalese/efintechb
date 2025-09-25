@@ -101,17 +101,38 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create PR for TST values (deviceregapi)
+      - name: Check for sibling promote PR (statistics)
         if: steps.guard.outputs.skip != 'true' && steps.diff.outputs.changed == 'true'
+        id: sibling
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          prs=$(curl -s -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main")
+          sibling_branch="ci/promote-tst-statistics"
+          open_sibling=$(echo "$prs" | jq -r \
+            	'.[] | select(.head.ref == "'"'${sibling_branch}'"'") | select(any(.labels[]?; .name=="promote-tst")) | .number' | head -n1)
+          if [ -n "${open_sibling}" ] && [ "${open_sibling}" != "null" ]; then
+            echo "sibling_open=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "sibling_open=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR for TST values (deviceregapi)
+        if: steps.guard.outputs.skip != 'true' && steps.diff.outputs.changed == 'true' && steps.sibling.outputs.sibling_open != 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "ci(helm): promote TST (deviceregapi) to sha:${{ github.event.workflow_run.head_sha }}"
-          title: "Promote TST (deviceregapi) to sha:${{ github.event.workflow_run.head_sha }}"
+          commit-message: "ci(helm): promote TST (deviceregapi)"
+          title: "Promote TST (deviceregapi)"
           body: |
-            This PR updates TST Helm values to deploy device-registration-api pinned by digest from `${{ github.event.workflow_run.head_sha }}`:
+            This PR updates TST Helm values to deploy device-registration-api pinned by digest.
+            Source commit: `${{ github.event.workflow_run.head_sha }}`
             - deviceregapi: `${{ steps.digest.outputs.ORG }}/device-registration-api@sha256:${{ steps.digest.outputs.DIGEST }}`
           branch: ci/promote-tst-devicereg
           base: main
           add-paths: infrastructure/helm/lbsite/values/tst.yaml
           labels: ci,promote-tst,device-registration-api
+          delete-branch: true
