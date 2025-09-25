@@ -29,17 +29,19 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort | default 8082 }}
           env:
-            {{- if .Values.secret.name }}
+            {{- with .Values.secret }}
+            {{- if .name }}
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secret.name }}
+                  name: {{ .name }}
                   key: username
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secret.name }}
+                  name: {{ .name }}
                   key: password
+            {{- end }}
             {{- end }}
             {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
