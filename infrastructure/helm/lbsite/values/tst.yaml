@@ -19,7 +19,7 @@ deviceregapi:
   image:
     repository: balese/device-registration-api
     pullPolicy: Always
-    digest: "50098f5df7ae5515d2003f8002db92cd49c28aa5cc978994dace1659dc252f76"
+    digest: "3590ce3ee4aabd12a52044fdf25225f44551fac9a88517c4dd7811f6f70482c4"
   secret:
     name: lbsite-tst-db
   service:
