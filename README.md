@@ -9,6 +9,7 @@ Monorepo for lbsite services and infrastructure.
 - **Orchestration**:
   - Local: `docker-compose` in `application/lbsite/`
   - Kubernetes: Umbrella Helm chart `infrastructure/helm/lbsite/` (installs APIs + PostgreSQL in the same namespace)
+- **CD**: Argo CD (GitOps)
 
 ## Local development (with PostgreSQL and debug)
 From `application/lbsite/`:
@@ -127,14 +128,14 @@ This repository uses GitHub Actions for CI and Argo CD for CD.
   - TST:
     ```bash
     kubectl -n lbsite-tst create secret generic lbsite-tst-db \
-      --from-literal=username=lbuser \
-      --from-literal=password=lbpass
+      --from-literal=username=<db-username> \
+      --from-literal=password=<db-password>
     ```
   - PRD:
     ```bash
     kubectl -n lbsite-prd create secret generic lbsite-prd-db \
-      --from-literal=username=lbuser \
-      --from-literal=password=lbpass
+      --from-literal=username=<db-username> \
+      --from-literal=password=<db-password>
     ```
 
 ### Required Secrets (GitHub Actions)
