@@ -1,7 +1,14 @@
 name: Compliance Framework
 
 on:
+  # Manual trigger
   workflow_dispatch:
+  # Run on PRs to main (so the check appears on PRs)
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'application/lbsite/**'
+      - '.github/workflows/compliance-framework.yml'
 
 permissions:
   contents: read
