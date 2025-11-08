@@ -172,3 +172,4 @@ The repo includes a simple compliance/security scan workflow: `/.github/workflow
 - Mandatory in CI
   - The compliance scan is treated as a mandatory gate in CI. Pull requests must have a passing “Compliance Framework” check before they can be merged to `main`.
   - Enforce this via repository Branch protection rules by marking the “Compliance Framework” workflow as a required status check.
+pwd
