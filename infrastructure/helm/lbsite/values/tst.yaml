@@ -3,7 +3,7 @@ statisticsapi:
   image:
     repository: balese/statistics-api
     pullPolicy: Always
-    digest: "caa3a09058e1670c8810d4697437b6caf2c8420b71332fcff9265e5758100800"
+    digest: "56a47c162feed0f9857072d3d8409dcd7769303a4ddfa3b21e1f8ed916173572"
   secret:
     name: lbsite-tst-db
   service:
