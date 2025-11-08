@@ -1,16 +1,7 @@
 name: StatisticsAPI CI
 
 on:
-  push:
-    branches:
-      - 'main'
-    tags:
-      - 'v*'
-  pull_request:
-    paths:
-      - 'application/lbsite/StatisticsAPI/**'
-      - '.github/workflows/statistics-api-ci.yml'
-      - 'infrastructure/helm/**'
+  workflow_dispatch:
 
 jobs:
   test:
