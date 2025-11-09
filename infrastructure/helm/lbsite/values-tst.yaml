@@ -2,16 +2,16 @@ deviceregapi:
   replicaCount: 1
   image:
     repository: efintechb/deviceregapi
-    tag: "1.0.0"
+    tag: "latest"
 
 statisticsapi:
   replicaCount: 1
   image:
     repository: efintechb/statisticsapi
-    tag: "1.0.0"
+    tag: "latest"
 
 smartapi:
   replicaCount: 1
   image:
     repository: efintechb/smartapi
-    tag: "1.0.0"
+    tag: "latest"
