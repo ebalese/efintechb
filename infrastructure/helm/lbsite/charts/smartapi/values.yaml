@@ -1,7 +1,7 @@
 image:
   repository: DOCKER_HUB_USERNAME/smartapi
   tag: latest
-  pullPolicy: always
+  pullPolicy: Always
 
 service:
   port: 8080
