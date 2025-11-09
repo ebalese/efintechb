@@ -1,7 +1,0 @@
-image:
-  repository: DOCKER_HUB_USERNAME/device-registration-api
-  tag: latest
-service:
-  port: 8081
-  targetPort: 8081
-replicaCount: 1

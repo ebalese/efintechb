@@ -1,5 +1,0 @@
-apiVersion: v2
-name: smartapi
-version: 0.1.0
-description: Chart for SmartAPI (FastAPI service)
-appVersion: "0.1.0"

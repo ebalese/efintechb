@@ -1,7 +1,0 @@
-image:
-  repository: DOCKER_HUB_USERNAME/statistics-api
-  tag: latest
-service:
-  port: 8082
-  targetPort: 8082
-replicaCount: 1
