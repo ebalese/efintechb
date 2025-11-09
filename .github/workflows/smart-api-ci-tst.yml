@@ -98,7 +98,7 @@ jobs:
           echo "$DH_TOKEN" | helm registry login registry-1.docker.io -u "$DH_USER" --password-stdin
 
       - name: Package and push smartapi chart
-        working-directory: infrastructure/helm/smartapi
+        working-directory: infrastructure/helm/lbsite/charts/smartapi
         run: |
           helm package . --version "${{ steps.ver.outputs.version }}"
           helm push smartapi-${{ steps.ver.outputs.version }}.tgz oci://registry-1.docker.io/${{ secrets.DOCKER_HUB_USERNAME }}
