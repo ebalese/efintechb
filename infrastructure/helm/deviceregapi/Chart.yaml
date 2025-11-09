@@ -1,5 +1,0 @@
-apiVersion: v2
-name: deviceregapi
-version: 0.1.2
-description: Chart for DeviceRegistrationAPI
-appVersion: "0.1.0"

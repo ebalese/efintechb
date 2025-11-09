@@ -19,7 +19,7 @@ spec:
     path: infrastructure/helm/lbsite
     helm:
       valueFiles:
-        - values/tst.yaml
+        - values-tst.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: lbsite-tst
