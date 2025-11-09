@@ -3,6 +3,14 @@ kind: Application
 metadata:
   name: lbsite-tst
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: |
+      deviceregapi=efintechb/deviceregapi,
+      statisticsapi=efintechb/statisticsapi,
+      smartapi=efintechb/smartapi
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/smartapi.force-update: "true"
 spec:
   project: default
   source:
