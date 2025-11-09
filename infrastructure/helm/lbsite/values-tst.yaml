@@ -8,7 +8,7 @@ imagePullSecrets:
 deviceregapi:
   replicaCount: 1
   image:
-    repository: efintechb/deviceregapi
+    repository: balese/deviceregapi
     tag: latest
     pullPolicy: Always
   resources:
@@ -23,7 +23,7 @@ deviceregapi:
 statisticsapi:
   replicaCount: 1
   image:
-    repository: efintechb/statisticsapi
+    repository: balese/statisticsapi
     tag: latest
     pullPolicy: Always
   resources:
@@ -38,7 +38,7 @@ statisticsapi:
 smartapi:
   replicaCount: 1
   image:
-    repository: efintechb/smartapi
+    repository: balese/smartapi
     tag: latest
     pullPolicy: Always
   resources:
