@@ -15,3 +15,6 @@ smartapi:
   image:
     repository: efintechb/smartapi
     tag: "latest"
+
+imagePullSecrets: 
+  - name: regcred
