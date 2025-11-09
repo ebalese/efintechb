@@ -1,20 +1,50 @@
+# values-tst.yaml for lbsite umbrella chart (TST environment)
+
+# Docker pull secret for private images
+imagePullSecrets:
+  - name: regcred
+
+# Device Registration API
 deviceregapi:
   replicaCount: 1
   image:
     repository: efintechb/deviceregapi
-    tag: "latest"
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
 
+# Statistics API
 statisticsapi:
   replicaCount: 1
   image:
     repository: efintechb/statisticsapi
-    tag: "latest"
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
 
+# Smart API
 smartapi:
   replicaCount: 1
   image:
     repository: efintechb/smartapi
-    tag: "latest"
-
-imagePullSecrets: 
-  - name: regcred
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
