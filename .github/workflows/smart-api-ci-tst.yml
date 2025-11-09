@@ -1,15 +1,13 @@
-name: SmartAPI CI
+name: SmartAPI CI (TST)
 
 on:
   push:
     branches:
       - 'main'
-    tags:
-      - 'v*'
   pull_request:
     paths:
       - 'application/lbsite/SmartAPI/**'
-      - '.github/workflows/smart-api-ci.yml'
+      - '.github/workflows/smart-api-ci-tst.yml'
       - 'infrastructure/helm/**'
 
 jobs:
@@ -40,15 +38,6 @@ jobs:
         run: |
           if [ -d "tests" ]; then pytest -q; else echo "No tests directory"; fi
 
-      - name: Upload test reports (if present)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: smartapi-test-reports
-          path: |
-            application/lbsite/SmartAPI/.pytest_cache/**
-          if-no-files-found: warn
-
   publish:
     runs-on: ubuntu-latest
     needs: test
@@ -69,6 +58,7 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
+      # 🔹 Tag the Docker image as "latest" and with commit SHA
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -76,10 +66,7 @@ jobs:
           images: ${{ secrets.DOCKER_HUB_USERNAME }}/smartapi
           tags: |
             type=raw,value=latest
-            type=sha
-            type=sha,format=long
-            type=raw,value=${{ github.sha }}
-            type=ref,event=tag
+            type=sha,format=short
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -96,6 +83,7 @@ jobs:
         with:
           version: v3.14.4
 
+      # 🔹 Generate short Helm chart version for traceability
       - name: Determine chart version
         id: ver
         run: |
