@@ -1,0 +1,62 @@
+name: Promote SmartAPI to TST
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["SmartAPI CI (TST)"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "IMAGE=balese/smartapi" >> $GITHUB_OUTPUT
+          echo "TAG=latest" >> $GITHUB_OUTPUT
+          echo "VALUES_FILE=infrastructure/helm/lbsite/values-tst.yaml" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx (for imagetools)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Fetch image digest
+        id: digest
+        run: |
+          DIGEST=$(docker buildx imagetools inspect docker.io/${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} | awk '/Digest:/ {print $2; exit}')
+          if [ -z "$DIGEST" ]; then echo "Failed to obtain digest" >&2; exit 1; fi
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Update values-tst.yaml (smartapi image tag -> latest@digest)
+        run: |
+          set -e
+          FILE="${{ steps.vars.outputs.VALUES_FILE }}"
+          TAG_WITH_DIGEST="${{ steps.vars.outputs.TAG }}@${{ steps.digest.outputs.digest }}"
+          sed -i '/^smartapi:/,/^[^[:space:]]/ s/^\([[:space:]]*tag:[[:space:]]*\).*/\1'"${TAG_WITH_DIGEST}"'/' "$FILE"
+          echo "Updated $FILE with tag: $TAG_WITH_DIGEST"
+          echo "---"
+          nl -ba "$FILE" | sed -n '1,80p'
+
+      - name: Commit and push changes
+        run: |
+          set -e
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add "${{ steps.vars.outputs.VALUES_FILE }}"
+          git commit -m "chore(tst): promote smartapi -> latest@${{ steps.digest.outputs.digest }}"
+          git push
+
