@@ -2,10 +2,10 @@
 Monorepo for lbsite services and infrastructure.
 
 ## Stack
-- **APIs**: `DeviceRegistrationAPI`, `StatisticsAPI` (Spring Boot 3, Java 17)
+- **APIs**: `DeviceRegistrationAPI`, `StatisticsAPI` (Spring Boot 3, Java 17), `SmartAPI` (FastAPI, Python 3.12)
 - **Database**: PostgreSQL (Bitnami Helm chart in Kubernetes; Docker image locally)
 - **Packaging**: Spring Boot fat JARs via `spring-boot-maven-plugin` (`repackage`)
-- **Containers**: Eclipse Temurin JRE 17 base images
+- **Containers**: Eclipse Temurin JRE 17 base images, Python slim for SmartAPI
 - **Orchestration**:
   - Local: `docker-compose` in `application/lbsite/`
   - Kubernetes: Umbrella Helm chart `infrastructure/helm/lbsite/` (installs APIs + PostgreSQL in the same namespace)
@@ -21,6 +21,7 @@ docker compose up --build
 This starts:
 - `statisticsapi`: http://localhost:8082 (debug on 5005)
 - `deviceregistrationapi`: http://localhost:8081 (debug on 5006)
+- `smartapi`: http://localhost:8080
 - `postgres`: localhost:5432 (default database and credentials are defined in `application/lbsite/docker-compose.yml`)
 
 Endpoints:
@@ -31,11 +32,45 @@ Endpoints:
 - DeviceRegistrationAPI
   - `GET /` -> service status
   - `POST /Device/register`
+- SmartAPI
+  - `GET /` -> service status
+  - `GET /health`
+  - `POST /math/*` (basic operations)
 
 ## Building fat JARs
 ```bash
 mvn clean package spring-boot:repackage -DskipTests
 ```
+
+## Folder structure
+- `application/`
+  - `lbsite/DeviceRegistrationAPI` (Java)
+  - `lbsite/StatisticsAPI` (Java)
+  - `lbsite/SmartAPI` (Python/FastAPI)
+- `infrastructure/`
+  - `helm/lbsite/` umbrella chart
+    - `values-tst.yaml`, `values-prd.yaml`
+    - `charts/` (service subcharts: `deviceregapi`, `statisticsapi`, `smartapi`)
+  - `kubernetes/argocd/` Argo CD Applications (tst/prd)
+- `.github/workflows/` CI/CD
+
+## CI/CD
+- Service CI:
+  - Java services: `device-registration-api-ci.yml`, `statistics-api-ci.yml`
+  - Python service: `smart-api-ci-tst.yml` (tests + build/push)
+- Promotion to TST (GitOps via digest):
+  - `promote-device-registration-tst.yml`
+  - `promote-statistics-tst.yml`
+  - `promote-smart-api-ci-tst.yml`
+- Each promotion workflow updates `infrastructure/helm/lbsite/values-tst.yaml` with `image.tag: latest@<digest>` and pushes to `main`, which Argo CD syncs.
+
+## Helm values
+- TST: `infrastructure/helm/lbsite/values-tst.yaml`
+- PRD: `infrastructure/helm/lbsite/values-prd.yaml`
+
+## Argo CD
+- TST app: `infrastructure/kubernetes/argocd/lbsite-tst-app.yaml`
+- PRD app: `infrastructure/kubernetes/argocd/lbsite-prd-app.yaml`
 Executable jars will be in `target/`:
 - `statistics-api-0.0.1-SNAPSHOT.jar`
 - `device-registration-api-0.0.1-SNAPSHOT.jar`
