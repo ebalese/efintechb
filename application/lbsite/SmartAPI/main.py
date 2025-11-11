@@ -1,51 +1,27 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
-import math
+from transformers import pipeline
 
-app = FastAPI()
+app = FastAPI(title="Sentiment Analysis API")
 
+# Load a pre-trained sentiment analysis model
+# This will download the model the first time it runs
+sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 
-# Pydantic model for request validation
-class BasicOperation(BaseModel):
-    a: float
-    b: float
-
+# Request model
+class TextRequest(BaseModel):
+    text: str
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-
 @app.get("/")
 def root():
     return {"message": "SmartAPI up"}
 
-
-@app.post("/math/add")
-def add(operation: BasicOperation):
-    """Add two numbers"""
-    result = math.fsum([operation.a, operation.b])
-    return {"operation": "addition", "a": operation.a, "b": operation.b, "result": result}
-
-
-@app.post("/math/subtract")
-def subtract(operation: BasicOperation):
-    """Subtract b from a"""
-    result = operation.a - operation.b
-    return {"operation": "subtraction", "a": operation.a, "b": operation.b, "result": result}
-
-
-@app.post("/math/multiply")
-def multiply(operation: BasicOperation):
-    """Multiply two numbers"""
-    result = math.prod([operation.a, operation.b])
-    return {"operation": "multiplication", "a": operation.a, "b": operation.b, "result": result}
-
-
-@app.post("/math/divide")
-def divide(operation: BasicOperation):
-    """Divide a by b"""
-    if operation.b == 0:
-        raise HTTPException(status_code=400, detail="Cannot divide by zero")
-    result = operation.a / operation.b
-    return {"operation": "division", "a": operation.a, "b": operation.b, "result": result}
+@app.post("/sentiment")
+def sentiment(req: TextRequest):
+    """Return sentiment prediction for input text"""
+    result = sentiment_pipeline(req.text)[0]  # returns [{'label': 'POSITIVE', 'score': 0.999}]
+    return {"text": req.text, "sentiment": result['label'].lower(), "score": float(result['score'])}
