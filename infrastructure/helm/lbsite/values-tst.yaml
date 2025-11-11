@@ -9,7 +9,7 @@ deviceregapi:
   replicaCount: 1
   image:
     repository: balese/device-registration-api
-    tag: latest@sha256:a9e566d8e24d4438d1c7aecdcef39bff69d2c7aee75336fcfcac0d7da158d88b
+    tag: latest@sha256:eb06786e98b675d5649f80a53334cc0b66281e44777e1c2b7a5aa3e2b70dd355
     pullPolicy: Always
   resources:
     requests:
