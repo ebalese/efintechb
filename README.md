@@ -2,45 +2,15 @@
 Monorepo for lbsite services and infrastructure.
 
 ## Stack
-- **APIs**: `DeviceRegistrationAPI`, `StatisticsAPI` (Spring Boot 3, Java 17), `SmartAPI` (FastAPI, Python 3.12)
+- **APIs**: `DeviceRegistrationAPI`, `StatisticsAPI` (Spring Boot 3, Java 17)
 - **Database**: PostgreSQL (Bitnami Helm chart in Kubernetes; Docker image locally)
 - **Packaging**: Spring Boot fat JARs via `spring-boot-maven-plugin` (`repackage`)
-- **Containers**: Eclipse Temurin JRE 17 base images, Python slim for SmartAPI
+- **Containers**: Eclipse Temurin JRE 17 base images
 - **Orchestration**:
   - Local: `docker-compose` in `application/lbsite/`
   - Kubernetes: Umbrella Helm chart `infrastructure/helm/lbsite/` (installs APIs + PostgreSQL in the same namespace)
 - **CD**: Argo CD (GitOps)
 
-## Local development (with PostgreSQL and debug)
-From `application/lbsite/`:
-
-```bash
-docker compose up --build
-```
-
-This starts:
-- `statisticsapi`: http://localhost:8082 (debug on 5005)
-- `deviceregistrationapi`: http://localhost:8081 (debug on 5006)
-- `smartapi`: http://localhost:8080
-- `postgres`: localhost:5432 (default database and credentials are defined in `application/lbsite/docker-compose.yml`)
-
-Endpoints:
-- StatisticsAPI
-  - `GET /` -> service status
-  - `GET /Log/auth/statistics?deviceType=IOS`
-  - `POST /Log/auth`
-- DeviceRegistrationAPI
-  - `GET /` -> service status
-  - `POST /Device/register`
-- SmartAPI
-  - `GET /` -> service status
-  - `GET /health`
-  - `POST /math/*` (basic operations)
-
-## Building fat JARs
-```bash
-mvn clean package spring-boot:repackage -DskipTests
-```
 
 ## Folder structure
 - `application/`
@@ -79,24 +49,12 @@ Executable jars will be in `target/`:
 Umbrella chart path: `infrastructure/helm/lbsite/`
 
 - The chart declares dependencies:
-  - `statisticsapi` and `deviceregapi` subcharts
+  - `statisticsapi`, `deviceregapi`, and `smartapi` subcharts
   - `postgresql` (Bitnami) as a dependency
 - The PostgreSQL chart is installed into the same namespace as the release, e.g. `lbsite-tst`.
 - Service connection (tst):
   - JDBC URL: `jdbc:postgresql://lbsite-tst-postgresql:5432/lbsite`
   - Credentials are provided via Kubernetes Secrets (referenced by the charts); avoid committing real secrets to Git.
-
-Common commands:
-```bash
-# From infrastructure/helm/lbsite/
-helm dependency update
-
-# Install/upgrade TST
-helm upgrade --install lbsite-tst . -n lbsite-tst -f values/tst.yaml
-
-# Install/upgrade PRD
-helm upgrade --install lbsite-prd . -n lbsite-prd -f values/prd.yaml
-```
 
 ## Image tags and pulling in Kubernetes
 - Use unique image tags and set `image.pullPolicy: Always` (configured in umbrella `values.yaml`) to ensure nodes pull updated images.
@@ -107,9 +65,6 @@ helm upgrade --install lbsite-prd . -n lbsite-prd -f values/prd.yaml
   - `<40charsha>`
   - `vX.Y.Z` on tag pushes (release tags)
 
-## Notes
-- To debug in Kubernetes, port-forward the pod/deployment debug port (5005) and attach a Remote JVM Debugger.
-- For production, enable persistence for PostgreSQL (PVCs) and manage credentials securely outside this README.
 
 ## CI/CD Overview
 
@@ -144,21 +99,24 @@ This repository uses GitHub Actions for CI and Argo CD for CD.
 ### Environment Promotion
 
 - **TST (digest pinned)**
-  - Workflow: `.github/workflows/promote-tst.yml` (trigger: a successful CI workflow for either service).
-  - Resolves Docker image digests for the triggering commit by checking tags (`sha-<shortsha>`, `<fullsha>`, `<shortsha>`) and writes them to `infrastructure/helm/lbsite/values/tst.yaml` as `image.digest` (removes `image.tag`). Includes retries to avoid registry lag, and an optional `:latest` fallback (warned as mutable).
-  - Opens a PR with the digest updates; merging it triggers Argo CD to deploy immutable digests.
+  - Workflows (per service):
+    - `.github/workflows/promote-device-registration-tst.yml`
+    - `.github/workflows/promote-statistics-tst.yml`
+    - `.github/workflows/promote-smart-api-ci-tst.yml`
+  - Each resolves the Docker image digest for `latest` and updates `infrastructure/helm/lbsite/values-tst.yaml` by setting `image.tag: latest@<digest>` for the respective service.
+  - The change is pushed to `main` (no PR), and Argo CD syncs to deploy the pinned digest.
 
 - **PRD (tag-based)**
   - Workflow: `.github/workflows/promote-prd.yml` (trigger: push of a tag matching `v*`).
-  - Updates `infrastructure/helm/lbsite/values/prd.yaml` to set both services' `image.tag` to `${{ github.ref_name }}` (e.g., `v1.2.0`).
+  - Updates `infrastructure/helm/lbsite/values-prd.yaml` to set services' `image.tag` to `${{ github.ref_name }}` (e.g., `v1.2.0`).
   - Opens a PR; merging it triggers Argo CD to deploy those release tags.
 
 ### Secrets management
 
 - Application containers read DB credentials from environment variables `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`, which are now sourced from Kubernetes Secrets via `valueFrom.secretKeyRef` in the service charts.
 - Configuration:
-  - `values/tst.yaml` and `values/prd.yaml` specify a Secret name per service (e.g., `statisticsapi.secret.name: lbsite-tst-db`).
-  - DB URL (`SPRING_DATASOURCE_URL`) and non-sensitive configs remain in `values/*.yaml`.
+  - `values-tst.yaml` and `values-prd.yaml` specify a Secret name per service (e.g., `statisticsapi.secret.name: lbsite-tst-db`).
+  - DB URL (`SPRING_DATASOURCE_URL`) and non-sensitive configs remain in `values-*.yaml`.
 - Bootstrap (one-time per environment):
   - TST:
     ```bash
@@ -189,5 +147,5 @@ This repository uses GitHub Actions for CI and Argo CD for CD.
 3. Ensure images are built and pushed with the same tag:
    - `${DOCKER_HUB_USERNAME}/statistics-api:v0.1.1`
    - `${DOCKER_HUB_USERNAME}/device-registration-api:v0.1.1`
-4. The PRD promotion workflow opens a PR updating `values/prd.yaml` tags to `v0.1.1`.
+4. The PRD promotion workflow opens a PR updating `values-prd.yaml` tags to `v0.1.1`.
 5. Merge the PR; Argo CD syncs PRD and rolls out the tagged images.
