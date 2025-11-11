@@ -1,140 +1,59 @@
-name: Promote StatisticsAPI to TST (Helm)
+name: Promote StatisticsAPI to TST
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["StatisticsAPI CI"]
     types: [completed]
 
 permissions:
   contents: write
-  pull-requests: write
-
-concurrency:
-  group: promote-tst-statistics
-  cancel-in-progress: true
 
 jobs:
-  update-values:
+  promote:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    env:
-      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
-      GITHUB_OWNER: ${{ github.repository_owner }}
     steps:
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
 
-      - name: Guard (only latest commit on main)
-        id: guard
+      - name: Set variables
+        id: vars
         run: |
-          git fetch --no-tags origin main
-          MAIN_SHA=$(git rev-parse origin/main)
-          RUN_SHA='${{ github.event.workflow_run.head_sha }}'
-          if [ "$RUN_SHA" != "$MAIN_SHA" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "IMAGE=balese/statisticsapi" >> $GITHUB_OUTPUT
+          echo "TAG=latest" >> $GITHUB_OUTPUT
+          echo "VALUES_FILE=infrastructure/helm/lbsite/values-tst.yaml" >> $GITHUB_OUTPUT
 
-      - name: Set up Docker Buildx
-        if: steps.guard.outputs.skip != 'true'
+      - name: Set up Docker Buildx (for imagetools)
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker login
-        if: steps.guard.outputs.skip != 'true' && env.DOCKER_HUB_USERNAME && env.DOCKER_HUB_TOKEN
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKER_HUB_USERNAME }}
-          password: ${{ env.DOCKER_HUB_TOKEN }}
-
-      - name: Resolve statistics-api digest
-        if: steps.guard.outputs.skip != 'true'
+      - name: Fetch image digest
         id: digest
-        shell: bash
         run: |
-          set -euo pipefail
-          SHA='${{ github.event.workflow_run.head_sha }}'
-          SHORT_SHA="${SHA:0:7}"
-          USER="${DOCKER_HUB_USERNAME:-${GITHUB_OWNER}}"
-          CANDIDATES=(
-            "docker.io/${USER}/statistics-api:sha-${SHORT_SHA}"
-            "docker.io/${USER}/statistics-api:${SHA}"
-            "docker.io/${USER}/statistics-api:${SHORT_SHA}"
-          )
-          resolve() {
-            local img; local tries=2; local sleep_s=2
-            for img in "$@"; do
-              for ((i=1; i<=tries; i++)); do
-                DIG=$(docker buildx imagetools inspect "$img" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"') || true
-                if [ -n "$DIG" ]; then echo "$DIG"; return 0; fi
-                sleep "$sleep_s"
-              done
-            done
-            return 1
-          }
-          DIGEST_FULL=$(resolve "${CANDIDATES[@]}") || true
-          if [ -z "$DIGEST_FULL" ]; then
-            echo "No digest found for statistics-api" >&2
+          DIGEST=$(docker buildx imagetools inspect docker.io/${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} | awk '/Digest:/ {print $2; exit}')
+          if [ -z "$DIGEST" ]; then echo "Failed to obtain digest" >&2; exit 1; fi
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Update values-tst.yaml (statisticsapi image tag -> latest@digest)
+        run: |
+          set -e
+          FILE="${{ steps.vars.outputs.VALUES_FILE }}"
+          TAG_WITH_DIGEST="${{ steps.vars.outputs.TAG }}@${{ steps.digest.outputs.digest }}"
+          sed -i '/^statisticsapi:/,/^[^[:space:]]/ s/^\([[:space:]]*tag:[[:space:]]*\).*/\1'"${TAG_WITH_DIGEST}"'/' "$FILE"
+          echo "Updated $FILE with statisticsapi tag: $TAG_WITH_DIGEST"
+
+      - name: Commit and push changes
+        run: |
+          set -e
+          if git diff --quiet; then
+            echo "No changes to commit."
             exit 0
           fi
-          echo "DIGEST=${DIGEST_FULL#sha256:}" >> "$GITHUB_OUTPUT"
-          echo "ORG=${USER}" >> "$GITHUB_OUTPUT"
-
-      - name: Update Helm TST values (statisticsapi)
-        if: steps.guard.outputs.skip != 'true' && steps.digest.outputs.DIGEST
-        run: |
-          yq -i '.statisticsapi.image.repository = "'"${{ steps.digest.outputs.ORG }}/statistics-api"'" |
-                 .statisticsapi.image.digest = "'"${{ steps.digest.outputs.DIGEST }}"'" |
-                 del(.statisticsapi.image.tag)' infrastructure/helm/lbsite/values/tst.yaml
-
-      - name: Detect changes
-        if: steps.guard.outputs.skip != 'true'
-        id: diff
-        run: |
-          git add infrastructure/helm/lbsite/values/tst.yaml
-          if git diff --cached --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check for sibling promote PR (devicereg)
-        if: steps.guard.outputs.skip != 'true' && steps.diff.outputs.changed == 'true'
-        id: sibling
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          # List open PRs to main and check for label promote-tst on a different branch
-          prs=$(curl -s -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main")
-          # sibling is devicereg workflow branch
-          sibling_branch="ci/promote-tst-devicereg"
-          open_sibling=$(echo "$prs" | jq -r \
-            	'.[] | select(.head.ref == "'"'${sibling_branch}'"'") | select(any(.labels[]?; .name=="promote-tst")) | .number' | head -n1)
-          if [ -n "${open_sibling}" ] && [ "${open_sibling}" != "null" ]; then
-            echo "sibling_open=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "sibling_open=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create PR for TST values (statisticsapi)
-        if: steps.guard.outputs.skip != 'true' && steps.diff.outputs.changed == 'true' && steps.sibling.outputs.sibling_open != 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "ci(helm): promote TST (statisticsapi)"
-          title: "Promote TST (statisticsapi)"
-          body: |
-            This PR updates TST Helm values to deploy statistics-api pinned by digest.
-            Source commit: `${{ github.event.workflow_run.head_sha }}`
-            - statisticsapi: `${{ steps.digest.outputs.ORG }}/statistics-api@sha256:${{ steps.digest.outputs.DIGEST }}`
-          branch: ci/promote-tst-statistics
-          base: main
-          add-paths: infrastructure/helm/lbsite/values/tst.yaml
-          labels: ci,promote-tst,statistics-api
-          delete-branch: true
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add "${{ steps.vars.outputs.VALUES_FILE }}"
+          git commit -m "chore(tst): promote statisticsapi -> latest@${{ steps.digest.outputs.digest }}"
+          git push
