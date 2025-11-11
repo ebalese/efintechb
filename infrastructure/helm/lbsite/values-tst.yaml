@@ -8,8 +8,8 @@ imagePullSecrets:
 deviceregapi:
   replicaCount: 1
   image:
-    repository: balese/deviceregapi
-    tag: latest
+    repository: balese/device-registration-api
+    tag: latest@sha256:c2df2c6298236d47c71db3144360a119d9fa5a811ae837c441649de0228841f3
     pullPolicy: Always
   resources:
     requests:
