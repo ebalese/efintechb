@@ -23,7 +23,7 @@ jobs:
       - name: Set variables
         id: vars
         run: |
-          echo "IMAGE=balese/deviceregapi" >> $GITHUB_OUTPUT
+          echo "IMAGE=balese/device-registration-api" >> $GITHUB_OUTPUT
           echo "TAG=latest" >> $GITHUB_OUTPUT
           echo "VALUES_FILE=infrastructure/helm/lbsite/values-tst.yaml" >> $GITHUB_OUTPUT
 
@@ -42,6 +42,7 @@ jobs:
           set -e
           FILE="${{ steps.vars.outputs.VALUES_FILE }}"
           TAG_WITH_DIGEST="${{ steps.vars.outputs.TAG }}@${{ steps.digest.outputs.digest }}"
+          sed -i '/^deviceregapi:/,/^[^[:space:]]/ s/^\([[:space:]]*repository:[[:space:]]*\).*/\1balese\/device-registration-api/' "$FILE"
           sed -i '/^deviceregapi:/,/^[^[:space:]]/ s/^\([[:space:]]*tag:[[:space:]]*\).*/\1'"${TAG_WITH_DIGEST}"'/' "$FILE"
           echo "Updated $FILE with deviceregapi tag: $TAG_WITH_DIGEST"
 
