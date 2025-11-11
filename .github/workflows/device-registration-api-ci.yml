@@ -130,7 +130,7 @@ jobs:
           echo "$DH_TOKEN" | helm registry login registry-1.docker.io -u "$DH_USER" --password-stdin
 
       - name: Package and push deviceregapi chart
-        working-directory: infrastructure/helm/deviceregapi
+        working-directory: infrastructure/helm/lbsite/charts/deviceregapi
         run: |
           helm package . --version "${{ steps.ver.outputs.version }}"
           helm push deviceregapi-${{ steps.ver.outputs.version }}.tgz oci://registry-1.docker.io/${{ secrets.DOCKER_HUB_USERNAME }}
