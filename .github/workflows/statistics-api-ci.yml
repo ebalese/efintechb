@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - 'main'
-    paths:
-      - 'application/lbsite/StatisticsAPI/**'
-      - '.github/workflows/statistics-api-ci.yml'
-      - 'infrastructure/helm/**'
   pull_request:
     paths:
       - 'application/lbsite/StatisticsAPI/**'
