@@ -1,5 +1,5 @@
 # Use PyTorch CPU image
-FROM pytorch/pytorch:2.1.0-cpu
+FROM pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
 
 # Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
