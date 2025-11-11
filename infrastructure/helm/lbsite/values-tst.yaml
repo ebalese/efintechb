@@ -39,7 +39,7 @@ smartapi:
   replicaCount: 1
   image:
     repository: balese/smartapi
-    tag: latest@sha256:9f22b17d757868b05aeafbd528e4a5d9cdc581a022122b948ce50f93a7888bfc
+    tag: latest@sha256:5f6377fd01ae35dcb808283bc8632452ef3bab90486e6e162448eb125a4bc3ed
     pullPolicy: Always
   resources:
     requests:
