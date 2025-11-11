@@ -1,7 +1,18 @@
 name: DeviceRegistrationAPI CI
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'application/lbsite/DeviceRegistrationAPI/**'
+      - '.github/workflows/device-registration-api-ci.yml'
+      - 'infrastructure/helm/**'
+  pull_request:
+    paths:
+      - 'application/lbsite/DeviceRegistrationAPI/**'
+      - '.github/workflows/device-registration-api-ci.yml'
+      - 'infrastructure/helm/**'
 
 jobs:
   test:
