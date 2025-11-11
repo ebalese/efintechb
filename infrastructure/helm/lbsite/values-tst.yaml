@@ -23,8 +23,8 @@ deviceregapi:
 statisticsapi:
   replicaCount: 1
   image:
-    repository: balese/statisticsapi
-    tag: latest
+    repository: balese/statistics-api
+    tag: latest@sha256:145ee5eca701f1075707fc57360619a0e7689f3884332952075018ef1f28ecd2
     pullPolicy: Always
   resources:
     requests:
