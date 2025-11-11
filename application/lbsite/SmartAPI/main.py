@@ -1,14 +1,32 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import onnxruntime as ort
+import numpy as np
+import os
 
-app = FastAPI(title="Sentiment Analysis API")
+app = FastAPI(title="Sentiment Analysis with ONNX")
 
-# Load a pre-trained sentiment analysis model
-# This will download the model the first time it runs
-sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
+ONNX_PATH = "model.onnx"
 
-# Request model
+# Only export the model to ONNX once (if not already done)
+if not os.path.exists(ONNX_PATH):
+    from transformers.onnx import export
+    from transformers.utils import logging
+    from pathlib import Path
+
+    logging.set_verbosity_error()
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+
+    onnx_path = Path(ONNX_PATH)
+    export(preprocessor=tokenizer, model=model, config=model.config, opset=13, output=onnx_path)
+
+# Load ONNX model and tokenizer
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+ort_session = ort.InferenceSession(ONNX_PATH)
+
 class TextRequest(BaseModel):
     text: str
 
@@ -22,6 +40,10 @@ def root():
 
 @app.post("/sentiment")
 def sentiment(req: TextRequest):
-    """Return sentiment prediction for input text"""
-    result = sentiment_pipeline(req.text)[0]  # returns [{'label': 'POSITIVE', 'score': 0.999}]
-    return {"text": req.text, "sentiment": result['label'].lower(), "score": float(result['score'])}
+    inputs = tokenizer(req.text, return_tensors="np", truncation=True, padding=True)
+    outputs = ort_session.run(None, dict(inputs))
+    scores = outputs[0][0]
+    label_id = int(np.argmax(scores))
+    label = "positive" if label_id == 1 else "negative"
+    confidence = float(np.max(np.exp(scores) / np.sum(np.exp(scores))))
+    return {"text": req.text, "sentiment": label, "confidence": confidence}
