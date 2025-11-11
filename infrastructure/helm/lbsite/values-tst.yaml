@@ -24,7 +24,7 @@ statisticsapi:
   replicaCount: 1
   image:
     repository: balese/statistics-api
-    tag: latest@sha256:27ed9ba610f5137eb45e50f43f0a832ec35bb5f595dce3a68a3a69e8ab0d28cf
+    tag: latest@sha256:a1ed179c0e2b591bfa77dda4d7b0848dab4aba5b11f43cb619fa4e0682943e55
     pullPolicy: Always
   resources:
     requests:
