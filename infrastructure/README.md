@@ -7,6 +7,7 @@ This directory contains Kubernetes and Helm assets for deploying lbsite.
   - `lbsite/` — Umbrella Helm chart that deploys both services and PostgreSQL
   - `statisticsapi/` — Service chart (published to OCI)
   - `deviceregapi/` — Service chart (published to OCI)
+  - `smartapi/` — Service chart (published to OCI)
 - `kubernetes/argocd/`
   - `lbsite-tst-app.yaml` — Argo CD Application for TST
   - `lbsite-prd-app.yaml` — Argo CD Application for PRD
@@ -21,12 +22,12 @@ helm dependency build
 # Render TST
 helm template lbsite-tst . \
   --namespace lbsite-tst \
-  --values values/tst.yaml
+  --values values-tst.yaml
 
 # Render PRD
 helm template lbsite-prd . \
   --namespace lbsite-prd \
-  --values values/prd.yaml
+  --values values-prd.yaml
 ```
 
 ## Argo CD
@@ -38,6 +39,7 @@ Services read DB credentials via `secretKeyRef`. Create the Secrets once per nam
 ## Notes
 - Service charts are versioned and published to Docker Hub OCI (`balese`). Update the umbrella `Chart.yaml` dependency versions when you publish new chart versions.
 - For quick local testing, you can vendor packaged service charts under `helm/lbsite/charts/`.
+- TST values pin images using `image.tag: latest@<digest>` so Argo CD detects and deploys digest changes.
 
 ## Branch protection
 The `main` branch is protected. Pushes to `main` are blocked; changes land via pull requests with required checks (CI and compliance) before merge.
