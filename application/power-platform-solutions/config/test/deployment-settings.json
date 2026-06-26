@@ -1,0 +1,17 @@
+{
+  "EnvironmentName": "Test",
+  "EnvironmentUrl": "https://test-org.crm.dynamics.com",
+  "SolutionName": "BankCore",
+  "SolutionVersion": "1.0.0.0",
+  "ConnectionReferences": {
+    "BankCore_API": "https://test-api.example.com"
+  },
+  "EnvironmentVariables": {
+    "API_Endpoint": "https://test-api.example.com",
+    "Logging_Level": "Info",
+    "Feature_Flags": "test_features"
+  },
+  "DataverseSettings": {
+    "SecurityGroupId": ""
+  }
+}

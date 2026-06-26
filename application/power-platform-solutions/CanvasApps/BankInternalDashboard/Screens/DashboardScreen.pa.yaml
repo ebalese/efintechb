@@ -1,0 +1,4 @@
+screen:
+  name: DashboardScreen
+  displayName: Dashboard Screen
+  description: Main analytics and reporting dashboard

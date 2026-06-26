@@ -1,0 +1,5 @@
+connectionReference:
+  name: bank_BankShared_SharePointConnection
+  displayName: BankShared SharePoint Connection
+  description: Shared SharePoint connection for document storage
+  connector: SharePoint

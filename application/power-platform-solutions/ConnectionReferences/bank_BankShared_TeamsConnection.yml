@@ -1,0 +1,5 @@
+connectionReference:
+  name: bank_BankShared_TeamsConnection
+  displayName: BankShared Teams Connection
+  description: Shared Microsoft Teams connection for notifications
+  connector: MicrosoftTeams

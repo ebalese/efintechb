@@ -1,0 +1,111 @@
+name: Build Power Platform Solutions
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'solutions/**'
+      - 'CanvasApps/**'
+      - 'Flows/**'
+      - 'entities/**'
+      - 'EnvironmentVariables/**'
+      - 'ConnectionReferences/**'
+      - 'PowerPages/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Power Platform CLI
+        uses: microsoft/powerplatform-actions/setup-pac@v1
+        with:
+          version: "latest"
+
+      - name: Pack Solutions (Managed + Unmanaged)
+        run: |
+          echo "🔨 Building solutions..."
+
+          # 1. BankShared (Foundation)
+          echo "Packing BankShared..."
+          pac solution pack \
+            --zipFile artifacts/BankShared_${{ inputs.version || '1.0.0' }}_managed.zip \
+            --folder solutions/BankShared \
+            --processCanvasApps true \
+            --packType Managed
+
+          pac solution pack \
+            --zipFile artifacts/BankShared_${{ inputs.version || '1.0.0' }}_unmanaged.zip \
+            --folder solutions/BankShared \
+            --processCanvasApps true \
+            --packType Unmanaged
+
+          # 2. BankCore
+          echo "Packing BankCore..."
+          pac solution pack \
+            --zipFile artifacts/BankCore_${{ inputs.version || '1.0.0' }}_managed.zip \
+            --folder solutions/BankCore \
+            --processCanvasApps true \
+            --packType Managed
+
+          pac solution pack \
+            --zipFile artifacts/BankCore_${{ inputs.version || '1.0.0' }}_unmanaged.zip \
+            --folder solutions/BankCore \
+            --processCanvasApps true \
+            --packType Unmanaged
+
+          # 3. BankCustomerPortal
+          echo "Packing BankCustomerPortal..."
+          pac solution pack \
+            --zipFile artifacts/BankCustomerPortal_${{ inputs.version || '1.0.0' }}_managed.zip \
+            --folder solutions/BankCustomerPortal \
+            --processCanvasApps true \
+            --packType Managed
+
+          pac solution pack \
+            --zipFile artifacts/BankCustomerPortal_${{ inputs.version || '1.0.0' }}_unmanaged.zip \
+            --folder solutions/BankCustomerPortal \
+            --processCanvasApps true \
+            --packType Unmanaged
+
+      - name: Upload Artifacts (for debugging)
+        uses: actions/upload-artifact@v4
+        with:
+          name: solution-packages
+          path: artifacts/
+          retention-days: 7
+
+      - name: Push to Artifactory
+        env:
+          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          ARTIFACTORY_PASS: ${{ secrets.ARTIFACTORY_PASS }}
+          ARTIFACTORY_REPO: ${{ secrets.ARTIFACTORY_REPO }}
+        run: |
+          echo "Uploading packages to Artifactory..."
+          for file in artifacts/*.zip; do
+            if [ -f "$file" ]; then
+              curl -u "${ARTIFACTORY_USER}:${ARTIFACTORY_PASS}" \
+                -X PUT "${ARTIFACTORY_URL}/${ARTIFACTORY_REPO}/$(basename $file)" \
+                --upload-file "$file"
+              echo "✓ Uploaded $(basename $file)"
+            fi
+          done
+
+      - name: Build Summary
+        run: |
+          echo "Build completed successfully!"
+          echo "Version: ${{ inputs.version || '1.0.0' }}"
+          echo "Solutions built: BankShared, BankCore, BankCustomerPortal"

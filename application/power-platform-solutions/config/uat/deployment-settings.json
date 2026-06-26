@@ -1,0 +1,17 @@
+{
+  "EnvironmentName": "UAT",
+  "EnvironmentUrl": "https://uat-org.crm.dynamics.com",
+  "SolutionName": "BankCore",
+  "SolutionVersion": "1.0.0.0",
+  "ConnectionReferences": {
+    "BankCore_API": "https://uat-api.example.com"
+  },
+  "EnvironmentVariables": {
+    "API_Endpoint": "https://uat-api.example.com",
+    "Logging_Level": "Warning",
+    "Feature_Flags": "uat_features"
+  },
+  "DataverseSettings": {
+    "SecurityGroupId": ""
+  }
+}

@@ -1,0 +1,6 @@
+environmentVariable:
+  name: bank_BankShared_KeyVaultUrl
+  displayName: BankShared Key Vault URL
+  description: Azure Key Vault URL for secret management
+  dataType: Text
+  defaultValue: ""

@@ -1,0 +1,5 @@
+connectionReference:
+  name: bank_BankCore_ApprovalsConnection
+  displayName: BankCore Approvals Connection
+  description: Approval system connection for BankCore solution
+  connector: Approval

@@ -1,0 +1,58 @@
+name: Deploy Solutions to Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Solution version (e.g. 1.0.0)'
+        required: true
+      target_environment:
+        description: 'Target Environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - uat
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}     # This is where GitHub Environments are used
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Solutions from Artifactory
+        run: |
+          mkdir -p artifacts
+          for sol in BankShared BankCore BankCustomerPortal; do
+            curl -f -L -u "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASS }}" \
+              -o "artifacts/${sol}_${{ inputs.version }}_managed.zip" \
+              "${{ secrets.ARTIFACTORY_URL }}/${{ secrets.ARTIFACTORY_REPO }}/${sol}_${{ inputs.version }}_managed.zip"
+          done
+
+      - name: Setup Power Platform CLI
+        uses: microsoft/powerplatform-actions/setup-pac@v1
+
+      - name: Authenticate to ${{ inputs.target_environment }} Environment
+        uses: microsoft/powerplatform-actions/authenticate@v1
+        with:
+          client-id: ${{ secrets.POWERPLATFORM_CLIENT_ID }}
+          client-secret: ${{ secrets.POWERPLATFORM_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.POWERPLATFORM_TENANT_ID }}
+          environment-url: ${{ secrets[format('POWERPLATFORM_ENV_URL_{0}', inputs.target_environment)] }}
+
+      - name: Deploy Solutions in Correct Order
+        run: |
+          echo "Deploying to ${{ inputs.target_environment }}..."
+
+          pac solution import --path artifacts/BankShared_${{ inputs.version }}_managed.zip --async --publish
+          pac solution import --path artifacts/BankCore_${{ inputs.version }}_managed.zip --async --publish
+          pac solution import --path artifacts/BankCustomerPortal_${{ inputs.version }}_managed.zip --async --publish
+
+      - name: Publish Customizations
+        run: pac solution publish

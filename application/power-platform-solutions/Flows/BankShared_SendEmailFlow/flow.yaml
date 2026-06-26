@@ -1,0 +1,6 @@
+flow:
+  name: BankShared_SendEmailFlow
+  displayName: Bank Shared Send Email Flow
+  description: Centralized email notification flow for all solutions
+  type: CloudFlow
+  trigger: Automated

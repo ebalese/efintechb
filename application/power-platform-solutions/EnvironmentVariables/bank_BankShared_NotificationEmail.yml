@@ -1,0 +1,6 @@
+environmentVariable:
+  name: bank_BankShared_NotificationEmail
+  displayName: BankShared Notification Email
+  description: Email address for sending notifications across all solutions
+  dataType: Email
+  defaultValue: ""

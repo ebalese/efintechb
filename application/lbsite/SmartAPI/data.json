@@ -1,0 +1,31 @@
+{
+  "shoppingCart": {
+    "items": [
+      {
+        "name": "Apples",
+        "quantity": 6,
+        "pricePerUnit": 0.50
+      },
+      {
+        "name": "Bananas",
+        "quantity": 12,
+        "pricePerUnit": 0.30
+      },
+      {
+        "name": "Milk",
+        "quantity": 2,
+        "pricePerUnit": 1.20
+      },
+      {
+        "name": "Bread",
+        "quantity": 1,
+        "pricePerUnit": 2.50
+      },
+      {
+        "name": "Eggs",
+        "quantity": 12,
+        "pricePerUnit": 0.15
+      }
+    ]
+  }
+} 

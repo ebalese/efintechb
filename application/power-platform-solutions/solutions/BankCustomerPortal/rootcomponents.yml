@@ -1,0 +1,7 @@
+rootcomponents:
+  - componentType: CanvasApp
+    componentName: BankCustomerPortal_App
+  - componentType: Flow
+    componentName: BankCustomerPortal_OnboardingFlow
+  - componentType: PowerPageSite
+    componentName: BankCustomerPortal_Site

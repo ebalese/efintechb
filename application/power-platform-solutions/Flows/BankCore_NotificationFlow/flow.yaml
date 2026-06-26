@@ -1,0 +1,6 @@
+flow:
+  name: BankCore_NotificationFlow
+  displayName: Bank Core Notification Flow
+  description: Notification routing for banking events
+  type: CloudFlow
+  trigger: Automated

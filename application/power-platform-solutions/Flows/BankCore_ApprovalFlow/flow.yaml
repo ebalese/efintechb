@@ -1,0 +1,6 @@
+flow:
+  name: BankCore_ApprovalFlow
+  displayName: Bank Core Approval Flow
+  description: Automated approval chain for banking operations
+  type: CloudFlow
+  trigger: Manual

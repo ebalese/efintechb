@@ -1,0 +1,17 @@
+{
+  "EnvironmentName": "Production",
+  "EnvironmentUrl": "https://prod-org.crm.dynamics.com",
+  "SolutionName": "BankCore",
+  "SolutionVersion": "1.0.0.0",
+  "ConnectionReferences": {
+    "BankCore_API": "https://api.example.com"
+  },
+  "EnvironmentVariables": {
+    "API_Endpoint": "https://api.example.com",
+    "Logging_Level": "Error",
+    "Feature_Flags": "production_features"
+  },
+  "DataverseSettings": {
+    "SecurityGroupId": ""
+  }
+}

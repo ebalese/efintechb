@@ -1,0 +1,6 @@
+app:
+  name: BankInternalDashboard
+  displayName: Bank Internal Dashboard
+  description: Internal reporting and analytics dashboard
+  publisher: eFinanceTech
+  version: 1.0.0.0

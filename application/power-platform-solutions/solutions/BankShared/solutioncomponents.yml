@@ -1,0 +1,22 @@
+solutioncomponents:
+  - componentType: Flow
+    componentName: BankShared_SendEmailFlow
+    displayName: Bank Shared Send Email Flow
+  - componentType: ConnectionReference
+    componentName: bank_BankShared_DataverseConnection
+    displayName: BankShared Dataverse Connection
+  - componentType: ConnectionReference
+    componentName: bank_BankShared_SharePointConnection
+    displayName: BankShared SharePoint Connection
+  - componentType: ConnectionReference
+    componentName: bank_BankShared_TeamsConnection
+    displayName: BankShared Teams Connection
+  - componentType: EnvironmentVariable
+    componentName: bank_BankShared_NotificationEmail
+    displayName: BankShared Notification Email
+  - componentType: EnvironmentVariable
+    componentName: bank_BankShared_SharePointSiteUrl
+    displayName: BankShared SharePoint Site URL
+  - componentType: EnvironmentVariable
+    componentName: bank_BankShared_KeyVaultUrl
+    displayName: BankShared Key Vault URL

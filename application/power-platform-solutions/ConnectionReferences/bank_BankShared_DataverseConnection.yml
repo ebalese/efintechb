@@ -1,0 +1,5 @@
+connectionReference:
+  name: bank_BankShared_DataverseConnection
+  displayName: BankShared Dataverse Connection
+  description: Shared Dataverse connection for all solutions
+  connector: MicrosoftDataverse

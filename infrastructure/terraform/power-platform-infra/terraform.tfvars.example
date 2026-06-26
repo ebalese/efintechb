@@ -1,0 +1,13 @@
+# Example Terraform Variables File
+# Copy this file to terraform.tfvars and update with your values
+
+# Default location for resources
+location = "eastus"
+
+# Default tags for all resources
+tags = {
+  ManagedBy = "Terraform"
+  Project   = "lbsite"
+  Owner     = "your-team@company.com"
+  CostCenter = "12345"
+}

@@ -1,0 +1,9 @@
+solution:
+  uniqueName: BankCustomerPortal
+  version: 1.0.0.0
+  publisher: eFinanceTech
+  displayName: Bank Customer Portal Solution
+  description: Customer-facing portal components
+  dependencies:
+    - BankShared
+    - BankCore

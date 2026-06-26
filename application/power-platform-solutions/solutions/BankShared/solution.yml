@@ -1,0 +1,7 @@
+solution:
+  uniqueName: BankShared
+  version: 1.0.0.0
+  publisher: eFinanceTech
+  displayName: Bank Shared Components Solution
+  description: Reusable shared components across banking solutions
+  dependencies: []

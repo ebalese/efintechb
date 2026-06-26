@@ -1,0 +1,3 @@
+rootcomponents:
+  - componentType: Flow
+    componentName: BankShared_SendEmailFlow

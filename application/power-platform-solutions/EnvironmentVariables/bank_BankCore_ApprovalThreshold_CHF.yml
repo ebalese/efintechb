@@ -1,0 +1,6 @@
+environmentVariable:
+  name: bank_BankCore_ApprovalThreshold_CHF
+  displayName: BankCore Approval Threshold (CHF)
+  description: Approval threshold in Swiss Francs
+  dataType: Number
+  defaultValue: 1000

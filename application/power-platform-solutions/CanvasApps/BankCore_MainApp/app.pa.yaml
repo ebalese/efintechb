@@ -1,0 +1,6 @@
+app:
+  name: BankCore_MainApp
+  displayName: Bank Core Main Application
+  description: Primary internal canvas application for core banking operations
+  publisher: eFinanceTech
+  version: 1.0.0.0

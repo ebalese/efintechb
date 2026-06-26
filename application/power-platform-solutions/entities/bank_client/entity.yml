@@ -1,0 +1,27 @@
+entity:
+  name: bank_client
+  displayName: Bank Client
+  description: Client entity for customer management
+  schemaName: bank_client
+  ownershipType: UserOwned
+  attributes:
+    - name: bank_clientid
+      type: UniqueIdentifier
+      required: true
+    - name: bank_clientname
+      type: String
+      required: true
+    - name: bank_email
+      type: String
+      required: true
+    - name: bank_phonenumber
+      type: String
+      required: false
+    - name: bank_clienttype
+      type: Picklist
+      required: true
+      options:
+        - value: 1
+          label: Individual
+        - value: 2
+          label: Corporate

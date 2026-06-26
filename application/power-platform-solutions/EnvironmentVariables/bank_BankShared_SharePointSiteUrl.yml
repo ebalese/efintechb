@@ -1,0 +1,6 @@
+environmentVariable:
+  name: bank_BankShared_SharePointSiteUrl
+  displayName: BankShared SharePoint Site URL
+  description: SharePoint site URL for document storage
+  dataType: Text
+  defaultValue: ""

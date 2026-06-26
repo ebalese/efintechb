@@ -1,0 +1,6 @@
+environmentVariable:
+  name: bank_BankCore_ApiBaseUrl
+  displayName: BankCore API Base URL
+  description: Base URL for BankCore API endpoints
+  dataType: Text
+  defaultValue: ""

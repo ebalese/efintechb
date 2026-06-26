@@ -1,0 +1,7 @@
+rootcomponents:
+  - componentType: CanvasApp
+    componentName: BankCore_MainApp
+  - componentType: Flow
+    componentName: BankCore_ApprovalFlow
+  - componentType: Flow
+    componentName: BankCore_NotificationFlow

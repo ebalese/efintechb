@@ -1,0 +1,28 @@
+entity:
+  name: bank_invoice
+  displayName: Bank Invoice
+  description: Invoice entity for banking operations
+  schemaName: bank_invoice
+  ownershipType: UserOwned
+  attributes:
+    - name: bank_invoiceid
+      type: UniqueIdentifier
+      required: true
+    - name: bank_invoicenumber
+      type: String
+      required: true
+    - name: bank_amount
+      type: Money
+      required: true
+    - name: bank_status
+      type: Picklist
+      required: true
+      options:
+        - value: 1
+          label: Draft
+        - value: 2
+          label: Submitted
+        - value: 3
+          label: Approved
+        - value: 4
+          label: Rejected

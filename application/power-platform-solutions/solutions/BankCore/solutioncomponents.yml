@@ -1,0 +1,31 @@
+solutioncomponents:
+  - componentType: CanvasApp
+    componentName: BankCore_MainApp
+    displayName: Bank Core Main Application
+  - componentType: CanvasApp
+    componentName: BankInternalDashboard
+    displayName: Bank Internal Dashboard
+  - componentType: Flow
+    componentName: BankCore_ApprovalFlow
+    displayName: Bank Core Approval Flow
+  - componentType: Flow
+    componentName: BankCore_NotificationFlow
+    displayName: Bank Core Notification Flow
+  - componentType: ConnectionReference
+    componentName: bank_BankCore_ApprovalsConnection
+    displayName: BankCore Approvals Connection
+  - componentType: EnvironmentVariable
+    componentName: bank_BankCore_ApiBaseUrl
+    displayName: BankCore API Base URL
+  - componentType: EnvironmentVariable
+    componentName: bank_BankCore_ApprovalThreshold_CHF
+    displayName: BankCore Approval Threshold (CHF)
+  - componentType: EnvironmentVariable
+    componentName: bank_BankCore_FeatureFlag_NewUI
+    displayName: BankCore Feature Flag - New UI
+  - componentType: Entity
+    componentName: bank_invoice
+    displayName: Bank Invoice
+  - componentType: Entity
+    componentName: bank_client
+    displayName: Bank Client

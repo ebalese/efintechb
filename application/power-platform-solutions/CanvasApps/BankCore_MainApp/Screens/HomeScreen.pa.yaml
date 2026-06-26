@@ -1,0 +1,4 @@
+screen:
+  name: HomeScreen
+  displayName: Home Screen
+  description: Main landing screen for the application

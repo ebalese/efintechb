@@ -1,46 +1,47 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from transformers import AutoTokenizer
-import onnxruntime as ort
-import numpy as np
+import json
+import pprint   
 
-app = FastAPI(title="ONNX Sentiment Analysis API")
 
-# Load tokenizer from exported files
-tokenizer = AutoTokenizer.from_pretrained("./")
 
-# Load ONNX model
-session = ort.InferenceSession("model.onnx")
+# Path to your JSON file
+file_path = "data.json"
 
-# Pydantic model for input
-class TextRequest(BaseModel):
-    text: str
+# Open and load the JSON file
+with open(file_path, "r", encoding="utf-8") as file:
+    
+    data = json.load(file)
+    data_string = json.dumps(data)
+    readable = pprint.pformat(data, indent=2)
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+    del data["shoppingCart"]["items"][0]
 
-@app.get("/")
-def root():
-    return {"message": "SmartAPI up"}
+    print("After deletion:")
+    new_readable = pprint.pformat(data, indent=2)
+    print(new_readable)
+ 
 
-@app.post("/sentiment")
-def sentiment(req: TextRequest):
-    # Tokenize input
-    inputs = tokenizer(req.text, return_tensors="np", truncation=True, padding=True)
 
-    # Run ONNX inference
-    logits = session.run(None, dict(inputs))[0][0]
 
-    # Softmax to get probabilities
-    exp = np.exp(logits)
-    probs = exp / np.sum(exp)
 
-    # Determine label
-    label = "positive" if int(np.argmax(probs)) == 1 else "negative"
 
-    return {
-        "text": req.text,
-        "sentiment": label,
-        "confidence": float(np.max(probs))
-    }
+
+
+    print(readable)
+
+    print("data_string is:")
+    print(data_string)
+    print("-------")
+
+
+
+
+    file2 = json.dump(data, open("data2.json", "w"))
+    print(f"Data type: {type(data)}")
+    print(f"Data string type: {type(data_string)}")
+
+# Print the loaded data
+print("Script is running")
+
+print("Data as JSON string:")
+print(data_string)
+

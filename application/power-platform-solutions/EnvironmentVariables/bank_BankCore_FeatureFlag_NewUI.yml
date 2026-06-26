@@ -1,0 +1,6 @@
+environmentVariable:
+  name: bank_BankCore_FeatureFlag_NewUI
+  displayName: BankCore Feature Flag - New UI
+  description: Feature flag to enable new user interface
+  dataType: YesNo
+  defaultValue: false

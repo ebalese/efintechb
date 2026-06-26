@@ -1,0 +1,21 @@
+# Build artifacts - entire folder is build output only
+artifacts/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Power Platform specific
+*.solution.xml
+*.cdsproject
+*.sln

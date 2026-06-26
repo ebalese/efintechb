@@ -1,0 +1,8 @@
+solution:
+  uniqueName: BankCore
+  version: 1.0.0.0
+  publisher: eFinanceTech
+  displayName: Bank Core Solution
+  description: Foundational components for banking operations
+  dependencies:
+    - BankShared

@@ -1,0 +1,4 @@
+screen:
+  name: InvoiceScreen
+  displayName: Invoice Screen
+  description: Invoice management and processing screen
